@@ -475,7 +475,7 @@ def main():
         """
         <div class="footer">
             🧠 AI Question Generator | 🚀 Created with Streamlit<br>
-            Make learning more effective with AI-powered assessments ✨
+            Make learning more effective with AI-powered assessments ✨<br>
             Made with teamwork of Shreyas, Shaurya and Mahati 🎯
         </div>
         """, 
