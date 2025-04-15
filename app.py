@@ -308,6 +308,13 @@ def main():
                             'file_obj': file
                         })
             
+            # History tracking
+            if 'generation_history' not in st.session_state:
+                st.session_state.generation_history = []
+
+# Add this file management initialization
+            if 'uploaded_files' not in st.session_state:
+                st.session_state.uploaded_files = []  # <-- Add this line
             # Display uploaded files with removal
             if st.session_state.uploaded_files:
                 st.markdown("### 📂 Selected Files")
