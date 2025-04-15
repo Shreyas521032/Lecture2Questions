@@ -1,4 +1,5 @@
 # app.py
+# app.py
 import streamlit as st
 import os
 import tempfile
@@ -19,6 +20,15 @@ import random
 from rake_nltk import Rake
 import time
 
+# Set page config - MUST BE FIRST STREAMLIT COMMAND
+st.set_page_config(
+    page_title="Exam Question Generator",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Then proceed with the rest of your initializations
 # Download necessary NLTK data
 try:
     nltk.data.find('tokenizers/punkt')
@@ -52,6 +62,8 @@ except LookupError:
                         'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'from', 
                         'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further', 'then', 'once']
         stopwords = SimpleStopwords()
+
+# Rest of your code remains the same...
 
 # Load spaCy NLP model
 try:
