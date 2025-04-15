@@ -892,7 +892,7 @@ if tab == "🧠 Generate Questions":
                 background-color: #f8f9fa;
                 border-radius: 8px;
                 margin-top: 20px;">
-                <img src="https://i.imgur.com/YSjyLmm.png" width="120">
+                <img src="https://repository-images.githubusercontent.com/182525249/aadd7a80-54fe-11eb-9872-ccd06b8789b6" width="120">
                 <h3 style="margin-top: 20px; color: #4361ee;">Upload material and generate questions</h3>
                 <p style="color: #8d99ae; max-width: 400px;">
                     Upload your learning material on the left panel and click Generate to create AI-powered questions
