@@ -9,4 +9,4 @@ PyPDF2
 Pillow
 numpy
 matplotlib
-plotly
+plotly.express
