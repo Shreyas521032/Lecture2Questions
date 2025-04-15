@@ -8,3 +8,4 @@ rake-nltk
 google-generativeai
 python-docx
 python-pptx
+requests
