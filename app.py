@@ -161,12 +161,46 @@ st.markdown("""
         background-color: #DBEAFE;
         border-bottom: 3px solid #3B82F6;
     }
+    /* File list styling */
+    .file-list {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #F8FAFC;
+        border-radius: 8px;
+    }
+    .file-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        margin-bottom: 5px;
+        background-color: white;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .file-name {
+        flex-grow: 1;
+    }
+    .file-size {
+        color: #64748B;
+        font-size: 0.8rem;
+    }
+    .remove-btn {
+        color: #DC2626;
+        cursor: pointer;
+        margin-left: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # History tracking
 if 'generation_history' not in st.session_state:
     st.session_state.generation_history = []
+
+# File management
+if 'uploaded_files' not in st.session_state:
+    st.session_state.uploaded_files = []
 
 def extract_text(file):
     try:
@@ -272,6 +306,11 @@ def generate_with_gemini(text, question_type, difficulty, api_key, num_questions
         st.info("💡 Try using 'gemini-1.0-pro' if this model isn't available")
         return None
 
+def remove_file(index):
+    """Remove a file from the uploaded files list"""
+    st.session_state.uploaded_files.pop(index)
+    st.experimental_rerun()
+
 def main():
     st.markdown('<h1 class="main-header">🧠 Lecture2Exam ✨</h1>', unsafe_allow_html=True)
     
@@ -285,19 +324,46 @@ def main():
             st.markdown('<div class="config-section">', unsafe_allow_html=True)
             st.markdown("### 🔑 API Configuration")
             
-            api_key = st.text_input(" API Key", type="password", 
+            api_key = st.text_input("API Key", type="password", 
                                    help="Get your key from Google AI Studio")
             st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="file-uploader">', unsafe_allow_html=True)
             st.markdown("### 📄 Upload Learning Material")
-            uploaded_file = st.file_uploader("Choose file", 
-                                           type=["txt", "docx", "pptx", "pdf"])
+            
+            # Multi-file uploader
+            uploaded_files = st.file_uploader("Choose files", 
+                                           type=["txt", "docx", "pptx", "pdf"],
+                                           accept_multiple_files=True)
+            
+            # Store uploaded files in session state
+            if uploaded_files and len(uploaded_files) > 0:
+                for file in uploaded_files:
+                    if file.name not in [f['name'] for f in st.session_state.uploaded_files]:
+                        st.session_state.uploaded_files.append({
+                            'name': file.name,
+                            'size': f"{len(file.getvalue()) / 1024:.1f} KB",
+                            'file_obj': file
+                        })
+            
+            # Display uploaded files with remove option
+            if len(st.session_state.uploaded_files) > 0:
+                st.markdown("### 📂 Selected Files")
+                st.markdown('<div class="file-list">', unsafe_allow_html=True)
+                for i, file in enumerate(st.session_state.uploaded_files):
+                    st.markdown(
+                        f'<div class="file-item">'
+                        f'<span class="file-name">{file["name"]}</span>'
+                        f'<span class="file-size">{file["size"]}</span>'
+                        f'<span class="remove-btn" onclick="removeFile({i})">🗑️</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                st.markdown('</div>', unsafe_allow_html=True)
+            
             st.markdown('</div>', unsafe_allow_html=True)
             
-            if uploaded_file:
-                file_info = st.success(f"📑 File uploaded: {uploaded_file.name}")
-                
+            if len(st.session_state.uploaded_files) > 0:
                 st.markdown('<div class="config-section">', unsafe_allow_html=True)
                 st.markdown("### ⚙️ Question Settings")
                 
@@ -331,24 +397,32 @@ def main():
                         st.error("⚠️ Please enter your API key")
                     else:
                         with st.spinner("🧙‍♂️ Generating intelligent questions..."):
-                            text = extract_text(uploaded_file)
-                            if text:
+                            # Combine all files' content
+                            combined_text = ""
+                            for file_info in st.session_state.uploaded_files:
+                                file = file_info['file_obj']
+                                text = extract_text(file)
+                                if text:
+                                    combined_text += f"\n\n--- {file.name} ---\n\n{text}"
+                            
+                            if combined_text:
                                 # Try with latest model first, fallback to 1.0 if needed
-                                questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                                questions = generate_with_gemini(combined_text, question_type, difficulty, api_key, num_questions)
                                 if not questions:
                                     # Fallback to gemini-1.0-pro if latest model fails
                                     genai.configure(api_key=api_key)
                                     model = genai.GenerativeModel('gemini-1.0-pro')
-                                    questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                                    questions = generate_with_gemini(combined_text, question_type, difficulty, api_key, num_questions)
                                 
                                 if questions:
                                     st.session_state.questions = questions
                                     st.session_state.formatted_questions = format_questions(questions)
                                     
                                     # Add to history
+                                    file_names = ", ".join([f['name'] for f in st.session_state.uploaded_files])
                                     st.session_state.generation_history.append({
                                         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                        'file': uploaded_file.name,
+                                        'file': file_names,
                                         'type': question_type,
                                         'difficulty': difficulty,
                                         'count': num_questions,
@@ -358,7 +432,7 @@ def main():
                                     st.session_state.questions = None
         
         with col2:
-            if uploaded_file and 'questions' in st.session_state and st.session_state.questions:
+            if len(st.session_state.uploaded_files) > 0 and 'questions' in st.session_state and st.session_state.questions:
                 st.markdown(f"<h2 class='subheader'>✅ Generated {question_type} Questions</h2>", unsafe_allow_html=True)
                 
                 # Show formatted questions with improved spacing
@@ -379,9 +453,16 @@ def main():
                 with col_b:
                     if st.button("🔄 Regenerate Questions", use_container_width=True):
                         with st.spinner("🔄 Regenerating questions..."):
-                            text = extract_text(uploaded_file)
-                            if text:
-                                questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                            # Combine all files' content again
+                            combined_text = ""
+                            for file_info in st.session_state.uploaded_files:
+                                file = file_info['file_obj']
+                                text = extract_text(file)
+                                if text:
+                                    combined_text += f"\n\n--- {file.name} ---\n\n{text}"
+                            
+                            if combined_text:
+                                questions = generate_with_gemini(combined_text, question_type, difficulty, api_key, num_questions)
                                 if questions:
                                     st.session_state.questions = questions
                                     st.session_state.formatted_questions = format_questions(questions)
@@ -481,6 +562,18 @@ def main():
         """, 
         unsafe_allow_html=True
     )
+    
+    # Add JavaScript for file removal
+    st.markdown("""
+    <script>
+    function removeFile(index) {
+        window.parent.postMessage({
+            type: 'streamlit:setComponentValue',
+            value: index
+        }, '*');
+    }
+    </script>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
