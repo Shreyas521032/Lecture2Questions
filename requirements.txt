@@ -1,4 +1,3 @@
-nltk
 matplotlib.pyplot
 seaborn
 wordcloud
