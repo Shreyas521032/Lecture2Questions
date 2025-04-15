@@ -1,6 +1,14 @@
 # app.py
 # 1. Imports
 import streamlit as st
+
+st.set_page_config(
+    page_title="Exam Question Generator",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import os
 import tempfile
 import base64
@@ -21,12 +29,7 @@ from rake_nltk import Rake
 import time
 
 # 2. SET PAGE CONFIG - MUST BE FIRST STREAMLIT COMMAND
-st.set_page_config(
-    page_title="Exam Question Generator",
-    page_icon="📚",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+
 
 # 3. NOW SAFE TO USE STREAMLIT COMMANDS
 # --------------------------------------------------
