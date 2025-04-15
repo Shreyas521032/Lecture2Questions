@@ -23,12 +23,35 @@ import time
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
-    nltk.download('punkt')
+    try:
+        nltk.download('punkt')
+    except:
+        st.warning("Could not download NLTK data. Using simplified text processing.")
+        # Define simple sentence tokenizer
+        def simple_sent_tokenize(text):
+            return re.split(r'(?<=[.!?])\s+', text)
+        sent_tokenize = simple_sent_tokenize
     
 try:
     nltk.data.find('corpora/stopwords')
+    from nltk.corpus import stopwords
 except LookupError:
-    nltk.download('stopwords')
+    try:
+        nltk.download('stopwords')
+        from nltk.corpus import stopwords
+    except:
+        st.warning("Could not download NLTK stopwords. Using simplified stopword list.")
+        # Define simple stopwords
+        class SimpleStopwords:
+            def words(self, lang):
+                return ['the', 'a', 'an', 'and', 'or', 'but', 'if', 'because', 'as', 'what', 'when', 
+                        'where', 'how', 'why', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 
+                        'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 
+                        'does', 'did', 'can', 'could', 'shall', 'should', 'will', 'would', 'may', 'might', 
+                        'must', 'to', 'of', 'in', 'on', 'at', 'by', 'for', 'with', 'about', 'against', 
+                        'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'from', 
+                        'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further', 'then', 'once']
+        stopwords = SimpleStopwords()
 
 # Load spaCy NLP model
 try:
@@ -36,10 +59,46 @@ try:
 except OSError:
     st.warning("Downloading spaCy model. This might take a while...")
     os.system("python -m spacy download en_core_web_sm")
+    try:
     nlp = spacy.load("en_core_web_sm")
+except OSError:
+    # If spaCy model is not available, use a simple fallback approach
+    st.warning("spaCy model not available. Using simplified NLP processing.")
+    
+    # Create a minimal class to mimic spaCy functionality
+    class SimpleNLP:
+        def __init__(self):
+            pass
+        
+        def __call__(self, text):
+            return SimpleDoc(text)
+    
+    class SimpleDoc:
+        def __init__(self, text):
+            self.text = text
+            self.ents = []
+            # Simple noun chunks extraction
+            self.noun_chunks = [SimpleSpan(chunk) for chunk in re.findall(r'\b[A-Z][a-z]+ [a-z]+\b|\b[A-Z][A-Z]+\b|\b[A-Z][a-z]+\b', text)]
+        
+    class SimpleSpan:
+        def __init__(self, text):
+            self.text = text
+    
+    nlp = SimpleNLP()
 
 # Initialize RAKE algorithm
-rake = Rake()
+try:
+    rake = Rake()
+except:
+    # Simple fallback if RAKE fails
+    class SimpleRake:
+        def extract_keywords_from_text(self, text):
+            self.keywords = re.findall(r'\b[A-Z][a-z]+ [a-z]+\b|\b[A-Z][A-Z]+\b|\b[A-Z][a-z]+\b', text)
+        
+        def get_ranked_phrases(self):
+            return list(set(self.keywords))
+    
+    rake = SimpleRake()
 
 # Set page config
 st.set_page_config(
