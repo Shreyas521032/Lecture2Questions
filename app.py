@@ -6,7 +6,7 @@ from datetime import datetime
 
 # Set page configuration
 st.set_page_config(
-    page_title="AI Question Generator",
+    page_title="Lecture2Exam",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed"
