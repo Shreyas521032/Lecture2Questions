@@ -66,14 +66,112 @@ if 'uploaded_files' not in st.session_state:
 def extract_text(file):
     # Existing extract_text function remains the same
     # ...
+    try:
+        if file.type == "text/plain":
+            return file.getvalue().decode("utf-8")
+        
+        elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            from docx import Document
+            doc = Document(BytesIO(file.read()))
+            return "\n".join([para.text for para in doc.paragraphs])
+        
+        elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+            from pptx import Presentation
+            prs = Presentation(BytesIO(file.read()))
+            text = []
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        text.append(shape.text)
+            return "\n".join(text)
+        
+        elif file.type == "application/pdf":
+            import PyPDF2
+            pdf_reader = PyPDF2.PdfReader(BytesIO(file.read()))
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text() + "\n"
+            return text
+        
+        else:
+            st.error("Unsupported file type")
+            return ""
+    
+    except Exception as e:
+        st.error(f"Error processing file: {str(e)}")
+        return ""
 
 def format_questions(raw_questions):
     # Existing format_questions function remains the same
     # ...
+    """Format the questions with better spacing and styling"""
+    if not raw_questions:
+        return ""
+    
+    # Split by numbered questions
+    import re
+    questions = re.split(r'\n\s*(\d+)\.\s+', raw_questions)
+    
+    if len(questions) <= 1:
+        return raw_questions
+    
+    formatted = ""
+    
+    # Skip the first empty element if it exists
+    start_idx = 1 if questions[0].strip() == "" else 0
+    
+    for i in range(start_idx, len(questions), 2):
+        if i+1 < len(questions):
+            question_num = questions[i]
+            question_content = questions[i+1].strip()
+            
+            # Add extra spacing between parts
+            question_content = question_content.replace("Question:", "\nQuestion:")
+            question_content = question_content.replace("Options:", "\nOptions:")
+            question_content = question_content.replace("Correct Answer:", "\n\nCorrect Answer:")
+            question_content = question_content.replace("Explanation:", "\n\nExplanation:")
+            
+            formatted += f'<div class="question-box">\n'
+            formatted += f'<span class="question-number">🔍 {question_num}.</span>\n'
+            formatted += f'{question_content}\n'
+            formatted += f'</div>\n\n'
+    
+    return formatted
 
 def generate_with_gemini(text, question_type, difficulty, api_key, num_questions=5):
     # Existing generate_with_gemini function remains the same
     # ...
+    try:
+        genai.configure(api_key=api_key)
+        
+        # Use the correct model name - gemini-1.5-pro-latest or gemini-1.0-pro
+        model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        
+        prompt = f"""
+        Generate {num_questions} {difficulty.lower()} {question_type} questions based on this content.
+        Format should be:
+        
+        1. Question: [question text]
+           Options (if MCQ): A) [option1] B) [option2] C) [option3] D) [option4]
+           Correct Answer: [correct answer]
+           Explanation: [brief explanation]
+        
+        Content:
+        {text[:12000]}  # Using first 12k chars to avoid token limits
+        """
+        
+        response = model.generate_content(prompt)
+        
+        if not response.text:
+            raise ValueError("Empty response from API")
+            
+        return response.text
+    
+    except Exception as e:
+        st.markdown(f'<div class="error-message">⚠️ API error: {str(e)}</div>', unsafe_allow_html=True)
+        st.info("🔑 Please ensure you're using the correct API key and model name")
+        st.info("💡 Try using 'gemini-1.0-pro' if this model isn't available")
+        return None
 
 def main():
     st.markdown('<h1 class="main-header">🧠 Lecture2Exam ✨</h1>', unsafe_allow_html=True)
