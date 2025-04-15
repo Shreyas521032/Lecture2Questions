@@ -275,129 +275,136 @@ def generate_with_gemini(text, question_type, difficulty, api_key, num_questions
 def main():
     st.markdown('<h1 class="main-header">🧠 Lecture2Exam ✨</h1>', unsafe_allow_html=True)
     
-    # File removal handling
-    if 'remove_index' not in st.session_state:
-        st.session_state.remove_index = -1
-    
-    # Create tabs
+    # Create tabs for main functionality and history
     tab1, tab2 = st.tabs(["📝 Generate Questions", "📊 History & Analytics"])
     
     with tab1:
         col1, col2 = st.columns([1, 2])
         
         with col1:
-            # API Configuration
             st.markdown('<div class="config-section">', unsafe_allow_html=True)
-            api_key = st.text_input("🔑 API Key", type="password", 
+            st.markdown("### 🔑 API Configuration")
+            
+            api_key = st.text_input(" API Key", type="password", 
                                    help="Get your key from Google AI Studio")
             st.markdown('</div>', unsafe_allow_html=True)
             
-            # File Uploader
             st.markdown('<div class="file-uploader">', unsafe_allow_html=True)
-            uploaded_files = st.file_uploader("📄 Upload Learning Material", 
-                                            type=["txt", "docx", "pptx", "pdf"],
-                                            accept_multiple_files=True)
-            
-            # Store uploaded files
-            if uploaded_files:
-                for file in uploaded_files:
-                    if file.name not in [f['name'] for f in st.session_state.uploaded_files]:
-                        st.session_state.uploaded_files.append({
-                            'name': file.name,
-                            'size': f"{len(file.getvalue()) / 1024:.1f} KB",
-                            'file_obj': file
-                        })
-            
-            # History tracking
-            if 'generation_history' not in st.session_state:
-                st.session_state.generation_history = []
-
-# Add this file management initialization
-            if 'uploaded_files' not in st.session_state:
-                st.session_state.uploaded_files = []  # <-- Add this line
-            # Display uploaded files with removal
-            if st.session_state.uploaded_files:
-                st.markdown("### 📂 Selected Files")
-                st.markdown('<div class="file-list">', unsafe_allow_html=True)
-                for i, file in enumerate(st.session_state.uploaded_files):
-                    st.markdown(
-                        f'<div class="file-item">'
-                        f'<span class="file-name">{file["name"]}</span>'
-                        f'<span class="file-size">{file["size"]}</span>'
-                        f'<span class="remove-btn" onclick="removeFile({i})">🗑️</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("### 📄 Upload Learning Material")
+            uploaded_file = st.file_uploader("Choose file", 
+                                           type=["txt", "docx", "pptx", "pdf"])
             st.markdown('</div>', unsafe_allow_html=True)
             
-            # Question Configuration
-            if st.session_state.uploaded_files:
+            if uploaded_file:
+                file_info = st.success(f"📑 File uploaded: {uploaded_file.name}")
+                
                 st.markdown('<div class="config-section">', unsafe_allow_html=True)
-                question_type = st.selectbox("📋 Question Type", ["MCQ", "Fill-in-the-Blank", "Short Answer"])
-                difficulty = st.select_slider("🎯 Difficulty Level", options=["Easy", "Medium", "Hard"])
-                num_questions = st.slider("🔢 Number of Questions", 3, 15, 5)
+                st.markdown("### ⚙️ Question Settings")
+                
+                question_type = st.selectbox("Question Type 📋", 
+                                           ["MCQ", "Fill-in-the-Blank", "Short Answer"])
+                
+                difficulty_icons = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}
+                difficulties = [f"{v} {k}" for k, v in difficulty_icons.items()]
+                difficulty_display = st.selectbox("Difficulty Level", difficulties)
+                difficulty = difficulty_display.split(' ')[1]  # Extract the actual difficulty
+                
+                num_questions = st.slider("Number of Questions 🔢", 
+                                        min_value=3, max_value=15, value=5,
+                                        help="More questions will take longer to generate")
                 st.markdown('</div>', unsafe_allow_html=True)
                 
-                # Generation controls
+                st.markdown('<div class="action-button">', unsafe_allow_html=True)
                 gen_col1, gen_col2 = st.columns(2)
                 with gen_col1:
                     generate_btn = st.button("✨ Generate Questions", use_container_width=True)
                 with gen_col2:
-                    if st.button("🗑️ Clear Results", use_container_width=True):
-                        if 'questions' in st.session_state:
-                            del st.session_state.questions
+                    clear_btn = st.button("🗑️ Clear Results", use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
                 
-                if generate_btn and api_key:
-                    with st.spinner("🧠 Generating intelligent questions..."):
-                        combined_text = ""
-                        for file_info in st.session_state.uploaded_files:
-                            text = extract_text(file_info['file_obj'])
-                            combined_text += f"\n\n--- {file_info['name']} ---\n\n{text}"
-                        
-                        if combined_text:
-                            questions = generate_with_gemini(combined_text[:12000], question_type, 
-                                                           difficulty, api_key, num_questions)
-                            if questions:
-                                st.session_state.questions = questions
-                                st.session_state.formatted_questions = format_questions(questions)
-                                st.session_state.generation_history.append({
-                                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                    'file': ", ".join([f['name'] for f in st.session_state.uploaded_files]),
-                                    'type': question_type,
-                                    'difficulty': difficulty,
-                                    'count': num_questions,
-                                    'questions': questions
-                                })
-
+                if clear_btn:
+                    if 'questions' in st.session_state:
+                        del st.session_state.questions
+                
+                if generate_btn:
+                    if not api_key:
+                        st.error("⚠️ Please enter your API key")
+                    else:
+                        with st.spinner("🧙‍♂️ Generating intelligent questions..."):
+                            text = extract_text(uploaded_file)
+                            if text:
+                                # Try with latest model first, fallback to 1.0 if needed
+                                questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                                if not questions:
+                                    # Fallback to gemini-1.0-pro if latest model fails
+                                    genai.configure(api_key=api_key)
+                                    model = genai.GenerativeModel('gemini-1.0-pro')
+                                    questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                                
+                                if questions:
+                                    st.session_state.questions = questions
+                                    st.session_state.formatted_questions = format_questions(questions)
+                                    
+                                    # Add to history
+                                    st.session_state.generation_history.append({
+                                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
+                                        'file': uploaded_file.name,
+                                        'type': question_type,
+                                        'difficulty': difficulty,
+                                        'count': num_questions,
+                                        'questions': questions
+                                    })
+                                else:
+                                    st.session_state.questions = None
+        
         with col2:
-            # Results display
-            if 'questions' in st.session_state and st.session_state.questions:
-                st.markdown(f"<h2 class='subheader'>✅ Generated {question_type} Questions</h2>", 
-                           unsafe_allow_html=True)
-                st.markdown(st.session_state.formatted_questions, unsafe_allow_html=True)
+            if uploaded_file and 'questions' in st.session_state and st.session_state.questions:
+                st.markdown(f"<h2 class='subheader'>✅ Generated {question_type} Questions</h2>", unsafe_allow_html=True)
                 
-                # Download controls
+                # Show formatted questions with improved spacing
+                if 'formatted_questions' in st.session_state:
+                    st.markdown(st.session_state.formatted_questions, unsafe_allow_html=True)
+                else:
+                    st.markdown(st.session_state.questions)
+                
                 col_a, col_b = st.columns(2)
                 with col_a:
                     st.download_button(
                         label="📥 Download Questions",
-                        data=st.session_state.questions.encode('utf-8'),
-                        file_name=f"questions_{datetime.now().strftime('%Y%m%d%H%M')}.txt",
-                        mime="text/plain"
+                        data=BytesIO(st.session_state.questions.encode('utf-8')),
+                        file_name=f"{question_type.lower().replace(' ', '_')}_questions.txt",
+                        mime="text/plain",
+                        use_container_width=True
                     )
                 with col_b:
-                    if st.button("🔄 Regenerate Questions"):
-                        del st.session_state.questions
+                    if st.button("🔄 Regenerate Questions", use_container_width=True):
+                        with st.spinner("🔄 Regenerating questions..."):
+                            text = extract_text(uploaded_file)
+                            if text:
+                                questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                                if questions:
+                                    st.session_state.questions = questions
+                                    st.session_state.formatted_questions = format_questions(questions)
+            else:
+                st.markdown("""
+                <div style="background-color: #F0F9FF; padding: 30px; border-radius: 10px; text-align: center; margin-top: 50px;">
+                    <h3>🚀 Ready to Create Questions?</h3>
+                    <p>Upload your learning material and configure settings to generate AI-powered questions.</p>
+                    <p style="font-size: 3rem; margin: 20px 0;">📚 ➡️ 🧠 ➡️ 📝</p>
+                    <p>Perfect for teachers, students, and learning professionals.</p>
+                </div>
+                """, unsafe_allow_html=True)
     
     with tab2:
-        # Analytics Tab
-        st.markdown("<h2 class='subheader'>📊 Generation Analytics</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 class='subheader'>📊 Generation History & Analytics</h2>", unsafe_allow_html=True)
         
-        if st.session_state.generation_history:
+        if not st.session_state.generation_history:
+            st.info("📭 No question generation history yet. Generate some questions to see your history.")
+        else:
             history_df = pd.DataFrame(st.session_state.generation_history)
             
-            # Stats Cards
+            # Show stats
+            st.markdown("<h3 class='subheader'>📈 Usage Statistics</h3>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.markdown(f"""
@@ -409,68 +416,71 @@ def main():
             with col2:
                 st.markdown(f"""
                 <div class="stats-card">
-                <h4>📑 Files Processed</h4>
-                <h2>{len(history_df['file'].unique())}</h2>
+                <h4>📋 Question Types</h4>
+                <h2>{len(history_df['type'].unique())}</h2>
                 </div>
                 """, unsafe_allow_html=True)
             with col3:
                 st.markdown(f"""
                 <div class="stats-card">
-                <h4>🧩 Total Questions</h4>
-                <h2>{history_df['count'].sum()}</h2>
+                <h4>📑 Files Processed</h4>
+                <h2>{len(history_df['file'].unique())}</h2>
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Visualizations
-            history_df['date'] = pd.to_datetime(history_df['timestamp']).dt.date
-            time_series = history_df.groupby('date')['count'].sum().reset_index()
+            # Additional stats row
+            if len(history_df) > 0:
+                col4, col5, col6 = st.columns(3)
+                with col4:
+                    total_questions = history_df['count'].sum()
+                    st.markdown(f"""
+                    <div class="stats-card">
+                    <h4>🧩 Total Questions Created</h4>
+                    <h2>{total_questions}</h2>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col5:
+                    most_common_type = history_df['type'].mode()[0]
+                    st.markdown(f"""
+                    <div class="stats-card">
+                    <h4>⭐ Most Used Type</h4>
+                    <h2>{most_common_type}</h2>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col6:
+                    most_common_difficulty = history_df['difficulty'].mode()[0]
+                    st.markdown(f"""
+                    <div class="stats-card">
+                    <h4>🎯 Favorite Difficulty</h4>
+                    <h2>{most_common_difficulty}</h2>
+                    </div>
+                    """, unsafe_allow_html=True)
             
-            fig1 = px.line(time_series, x='date', y='count', 
-                          title='Questions Generated Over Time',
-                          markers=True)
-            st.plotly_chart(fig1, use_container_width=True)
+            # Display history table
+            st.markdown("<h3 class='subheader'>📜 Recent Generation Activity</h3>", unsafe_allow_html=True)
             
-            fig2 = px.pie(history_df, names='difficulty', 
-                         title='Difficulty Distribution',
-                         color_discrete_sequence=px.colors.qualitative.Pastel)
-            st.plotly_chart(fig2, use_container_width=True)
+            # Create a more readable history table
+            display_df = history_df[['timestamp', 'file', 'type', 'difficulty', 'count']].copy()
+            display_df.columns = ['⏰ Timestamp', '📄 File', '📋 Type', '🎯 Difficulty', '🔢 Count']
+            st.dataframe(display_df.tail(10), use_container_width=True)
             
-            # History Table
-            st.markdown("### 📜 Recent Activity")
-            st.dataframe(history_df[['timestamp', 'file', 'type', 'difficulty', 'count']]
-                        .tail(10)
-                        .rename(columns={
-                            'timestamp': '⏰ Time',
-                            'file': '📄 File',
-                            'type': '📋 Type',
-                            'difficulty': '🎯 Difficulty',
-                            'count': '🔢 Count'
-                        }), use_container_width=True)
-            
+            # Option to clear history
             if st.button("🗑️ Clear History"):
                 st.session_state.generation_history = []
                 st.experimental_rerun()
-        else:
-            st.info("📭 No generation history available")
 
-    # File removal JavaScript
-    st.markdown("""
-    <script>
-    function removeFile(index) {
-        window.parent.postMessage({
-            type: 'streamlit:setComponentValue',
-            value: index
-        }, '*');
-    }
-    </script>
-    """, unsafe_allow_html=True)
-    
-    # File removal handler
-    remove_index = st.number_input('', min_value=-1, value=-1, key='remove_index')
-    if remove_index >= 0 and remove_index < len(st.session_state.uploaded_files):
-        st.session_state.uploaded_files.pop(remove_index)
-        st.session_state.remove_index = -1
-        st.experimental_rerun()
+    # Footer
+    st.markdown("---")
+    st.markdown(
+        """
+        <div class="footer">
+            🧠 Lecture2Exam<br>
+            Make learning more effective with AI-powered assessments ✨<br>
+            Made with teamwork of Shreyas, Shaurya and Mahati 🎯
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
 if __name__ == "__main__":
     main()
