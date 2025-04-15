@@ -180,11 +180,6 @@ For each question:
 - Provide a model short answer (2-3 sentences)
 - Focus on key concepts from the lecture
 """
-
-   
-
-Here are the lecture notes:
-
     try:
         # Configure the model with safety settings
         generation_config = {
