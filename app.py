@@ -440,7 +440,7 @@ def generate_questions_with_openai(text, question_type, difficulty, num_question
     
     try:
         # Set up the API key
-        api_key = st.session_state.get('openai_api_key', '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')
+        api_key = st.session_state.get('openai_api_key', 'AIzaSyC0gjQQgnOUfjEowLmFB3crn-UzWIBXQHg')
         if not api_key:
             st.warning("⚠️ OpenAI API key not provided. Using fallback question generation method.")
             raise ValueError("API key not provided")
