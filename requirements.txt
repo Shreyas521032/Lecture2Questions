@@ -1,4 +1,4 @@
-nltk==25.0.1
+nltk
 matplotlib.pyplot
 seaborn
 wordcloud
