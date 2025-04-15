@@ -509,7 +509,19 @@ def main():
                 <h2>{len(history_df['file'].unique())}</h2>
                 </div>
                 """, unsafe_allow_html=True)
-            with col4:   
+            
+            # Additional stats row (modified)
+            if len(history_df) > 0:
+                col4 = st.columns(1)[0]
+                with col4:
+                    total_questions = history_df['count'].sum()
+                    st.markdown(f"""
+                    <div class="stats-card">
+                    <h4>🧩 Total Questions Created</h4>
+                    <h2>{total_questions}</h2>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
                 # New analytics section
                 st.markdown("<h3 class='subheader'>📊 Detailed Analytics</h3>", unsafe_allow_html=True)
                 
