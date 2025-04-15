@@ -509,7 +509,7 @@ def main():
                 <h2>{len(history_df['file'].unique())}</h2>
                 </div>
                 """, unsafe_allow_html=True)
-                
+            with col4:   
                 # New analytics section
                 st.markdown("<h3 class='subheader'>📊 Detailed Analytics</h3>", unsafe_allow_html=True)
                 
