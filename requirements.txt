@@ -2,7 +2,7 @@ streamlit
 PyMuPDF
 python-docx
 pandas
-openai
+google-generativeai
 nltk
 spacy
 rake-nltk
