@@ -628,8 +628,7 @@ def main():
         # Show welcome message when no file is uploaded
         st.markdown('<div class="custom-box">', unsafe_allow_html=True)
         st.markdown("### 👋 Welcome to the Exam Question Generator!")
-        st.markdown("""
-        This app helps you create exam questions from your lecture notes. Here's how to use it:
+        st.markdown("""This app helps you create exam questions from your lecture notes. Here's how to use it:
         
         1. Upload your lecture notes (PDF or TXT format)
         2. Select the type of questions you want to generate
