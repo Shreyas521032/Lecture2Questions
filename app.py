@@ -273,7 +273,7 @@ def generate_with_gemini(text, question_type, difficulty, api_key, num_questions
         return None
 
 def main():
-    st.markdown('<h1 class="main-header">🧠 AI Question Generator ✨</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🧠 Lecture2Exam ✨</h1>', unsafe_allow_html=True)
     
     # Create tabs for main functionality and history
     tab1, tab2 = st.tabs(["📝 Generate Questions", "📊 History & Analytics"])
@@ -476,6 +476,7 @@ def main():
         <div class="footer">
             🧠 AI Question Generator | 🚀 Created with Streamlit<br>
             Make learning more effective with AI-powered assessments ✨
+            Made with teamwork of Shreyas, Shaurya and Mahati 🎯
         </div>
         """, 
         unsafe_allow_html=True
