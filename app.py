@@ -3,6 +3,7 @@ from io import BytesIO
 import google.generativeai as genai
 import pandas as pd
 from datetime import datetime
+import plotly.express as px
 
 # Set page configuration
 st.set_page_config(
@@ -509,9 +510,9 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Additional stats row
+            # Additional stats row (modified)
             if len(history_df) > 0:
-                col4, col5, col6 = st.columns(3)
+                col4, col6 = st.columns(2)
                 with col4:
                     total_questions = history_df['count'].sum()
                     st.markdown(f"""
@@ -520,22 +521,47 @@ def main():
                     <h2>{total_questions}</h2>
                     </div>
                     """, unsafe_allow_html=True)
-                with col5:
-                    most_common_type = history_df['type'].mode()[0]
-                    st.markdown(f"""
-                    <div class="stats-card">
-                    <h4>⭐ Most Used Type</h4>
-                    <h2>{most_common_type}</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
                 with col6:
                     most_common_difficulty = history_df['difficulty'].mode()[0]
                     st.markdown(f"""
                     <div class="stats-card">
-                    <h4>🎯 Favorite Difficulty</h4>
+                    <h4>🎯 Most Common Difficulty</h4>
                     <h2>{most_common_difficulty}</h2>
                     </div>
                     """, unsafe_allow_html=True)
+                
+                # New analytics section
+                st.markdown("<h3 class='subheader'>📊 Detailed Analytics</h3>", unsafe_allow_html=True)
+                
+                # Prepare data for visualizations
+                history_df['datetime'] = pd.to_datetime(history_df['timestamp'])
+                timeline_df = history_df.set_index('datetime').resample('D')['count'].sum().reset_index()
+                difficulty_df = history_df.groupby('difficulty')['count'].sum().reset_index()
+                
+                # Create two columns for charts
+                chart_col1, chart_col2 = st.columns(2)
+                
+                with chart_col1:
+                    # Timeline chart
+                    fig = px.line(timeline_df, 
+                                x='datetime', 
+                                y='count',
+                                title='Question Generation Timeline',
+                                labels={'count': 'Questions Generated', 'datetime': 'Date'},
+                                markers=True)
+                    fig.update_layout(hovermode="x unified")
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with chart_col2:
+                    # Difficulty distribution pie chart
+                    fig = px.pie(difficulty_df,
+                                values='count',
+                                names='difficulty',
+                                title='Difficulty Distribution',
+                                color_discrete_sequence=px.colors.qualitative.Pastel,
+                                hole=0.3)
+                    fig.update_traces(textposition='inside', textinfo='percent+label')
+                    st.plotly_chart(fig, use_container_width=True)
             
             # Display history table
             st.markdown("<h3 class='subheader'>📜 Recent Generation Activity</h3>", unsafe_allow_html=True)
