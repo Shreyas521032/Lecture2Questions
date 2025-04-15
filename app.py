@@ -68,8 +68,8 @@ def generate_with_gemini(text, question_type, difficulty, api_key):
     try:
         genai.configure(api_key=api_key)
         
-        # Use the correct model name
-        model = genai.GenerativeModel('gemini-pro')  # Updated model name
+        # Use the correct model name - gemini-1.5-pro-latest or gemini-1.0-pro
+        model = genai.GenerativeModel('gemini-1.5-pro-latest')
         
         prompt = f"""
         Generate 5 {difficulty.lower()} {question_type} questions based on this content.
@@ -94,6 +94,7 @@ def generate_with_gemini(text, question_type, difficulty, api_key):
     except Exception as e:
         st.markdown(f'<div class="error-message">Gemini API error: {str(e)}</div>', unsafe_allow_html=True)
         st.info("Please ensure you're using the correct API key and model name")
+        st.info("Try using 'gemini-1.0-pro' if this model isn't available")
         return None
 
 def main():
@@ -120,7 +121,13 @@ def main():
                     with st.spinner("Generating questions..."):
                         text = extract_text(uploaded_file)
                         if text:
+                            # Try with latest model first, fallback to 1.0 if needed
                             questions = generate_with_gemini(text, question_type, difficulty, api_key)
+                            if not questions:
+                                # Fallback to gemini-1.0-pro if latest model fails
+                                model = genai.GenerativeModel('gemini-1.0-pro')
+                                questions = generate_with_gemini(text, question_type, difficulty, api_key)
+                            
                             if questions:
                                 st.session_state.questions = questions
                             else:
