@@ -4,6 +4,5 @@ python-docx>=0.8.11
 pandas>=1.5.3
 nltk>=3.8.1
 spacy>=3.5.3
-en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0-py3-none-any.whl
 rake-nltk>=1.0.6
 google-generativeai>=0.3.2
