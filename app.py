@@ -29,6 +29,10 @@ st.markdown("""
         background-color: #2563EB;
         color: white;
     }
+    .error-message {
+        color: #ff4b4b;
+        font-weight: bold;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -63,25 +67,33 @@ def extract_text(file):
 def generate_with_gemini(text, question_type, difficulty, api_key):
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        
+        # Use the correct model name
+        model = genai.GenerativeModel('gemini-1.0-pro')  # Updated model name
         
         prompt = f"""
         Generate 5 {difficulty.lower()} {question_type} questions based on this content.
-        For each question include:
-        - Clear question text
-        - Correct answer
-        {"- 3 incorrect options (for MCQ)" if question_type == "MCQ" else ""}
-        - Brief explanation
+        Format should be:
+        
+        1. Question: [question text]
+           Options (if MCQ): A) [option1] B) [option2] C) [option3] D) [option4]
+           Correct Answer: [correct answer]
+           Explanation: [brief explanation]
         
         Content:
         {text[:10000]}  # Using first 10k chars to avoid token limits
         """
         
         response = model.generate_content(prompt)
-        return response.text if response else "Failed to generate questions"
+        
+        if not response.text:
+            raise ValueError("Empty response from Gemini API")
+            
+        return response.text
     
     except Exception as e:
-        st.error(f"Gemini API error: {str(e)}")
+        st.markdown(f'<div class="error-message">Gemini API error: {str(e)}</div>', unsafe_allow_html=True)
+        st.info("Please ensure you're using the correct API key and model name")
         return None
 
 def main():
@@ -111,8 +123,10 @@ def main():
                             questions = generate_with_gemini(text, question_type, difficulty, api_key)
                             if questions:
                                 st.session_state.questions = questions
+                            else:
+                                st.session_state.questions = None
 
-    if uploaded_file and 'questions' in st.session_state:
+    if uploaded_file and 'questions' in st.session_state and st.session_state.questions:
         st.markdown(f"## Generated {question_type} Questions")
         st.markdown(st.session_state.questions)
         
