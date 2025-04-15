@@ -633,30 +633,8 @@ def main():
         # Show sample questions
         with st.expander("See sample outputs"):
             st.markdown("### Multiple Choice Question (MCQ) Example")
-            st.markdown("""
-            **Question:** Which of the following best describes photosynthesis?
-            
-            A. A process where plants release carbon dioxide and consume oxygen
-            B. A process where plants convert light energy into chemical energy ✓
-            C. A process only occurring in animals to produce energy
-            D. A process of breaking down glucose in the absence of oxygen
-            
-            **Explanation:** Photosynthesis is the process used by plants to convert light energy from the sun into chemical energy stored in glucose molecules.
-            """)
-            
             st.markdown("### Fill-in-the-Blank Example")
-            st.markdown("""
-            **Question:** During cellular respiration, glucose is broken down into carbon dioxide and water, releasing _____ as a byproduct.
             
-            **Answer:** energy (or ATP)
-            """)
-            
-            st.markdown("### Short Answer Example")
-            st.markdown("""
-            **Question:** Explain the significance of DNA replication in cell division.
-            
-            **Model Answer:** DNA replication is crucial for cell division because it ensures each daughter cell receives an identical copy of the genetic material. During this process, the DNA double helix unwinds, and each strand serves as a template for the synthesis of a new complementary strand, resulting in two identical DNA molecules before the cell divides.
-            """)
 
 # Run the app
 if __name__ == "__main__":
