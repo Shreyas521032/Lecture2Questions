@@ -58,9 +58,7 @@ try:
     nlp = spacy.load("en_core_web_sm")
 except OSError:
     st.warning("Downloading spaCy model. This might take a while...")
-    os.system("python -m spacy download en_core_web_sm")
-    try:
-    nlp = spacy.load("en_core_web_sm")
+    
 
     
     # Create a minimal class to mimic spaCy functionality
