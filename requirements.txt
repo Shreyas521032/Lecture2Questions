@@ -14,5 +14,4 @@ python-pptx
 PyPDF2
 Pillow
 numpy
-matplotlib
 plotly.express
