@@ -262,12 +262,12 @@ def generate_with_gemini(text, question_type, difficulty, api_key, num_questions
         response = model.generate_content(prompt)
         
         if not response.text:
-            raise ValueError("Empty response from Gemini API")
+            raise ValueError("Empty response from API")
             
         return response.text
     
     except Exception as e:
-        st.markdown(f'<div class="error-message">⚠️ Gemini API error: {str(e)}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="error-message">⚠️ API error: {str(e)}</div>', unsafe_allow_html=True)
         st.info("🔑 Please ensure you're using the correct API key and model name")
         st.info("💡 Try using 'gemini-1.0-pro' if this model isn't available")
         return None
@@ -285,7 +285,7 @@ def main():
             st.markdown('<div class="config-section">', unsafe_allow_html=True)
             st.markdown("### 🔑 API Configuration")
             
-            api_key = st.text_input("Gemini API Key", type="password", 
+            api_key = st.text_input(" API Key", type="password", 
                                    help="Get your key from Google AI Studio")
             st.markdown('</div>', unsafe_allow_html=True)
             
@@ -328,7 +328,7 @@ def main():
                 
                 if generate_btn:
                     if not api_key:
-                        st.error("⚠️ Please enter your Gemini API key")
+                        st.error("⚠️ Please enter your API key")
                     else:
                         with st.spinner("🧙‍♂️ Generating intelligent questions..."):
                             text = extract_text(uploaded_file)
@@ -474,7 +474,7 @@ def main():
     st.markdown(
         """
         <div class="footer">
-            🧠 AI Question Generator | ⚡ Powered by Gemini | 🚀 Created with Streamlit<br>
+            🧠 AI Question Generator | 🚀 Created with Streamlit<br>
             Make learning more effective with AI-powered assessments ✨
         </div>
         """, 
