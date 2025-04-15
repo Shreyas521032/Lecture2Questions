@@ -181,30 +181,7 @@ For each question:
 - Focus on key concepts from the lecture
 """
 
-    prompt += f"""
-Format your response as a JSON object with the following structure:
-{{
-  "questions": [
-    {{
-      "question": "Question text",
-      "type": "{question_type}",
-"""
-
-    if question_type == "MCQ":
-        prompt += """      "options": ["A. option1", "B. option2", "C. option3", "D. option4"],
-      "correct_answer": "A",
-      "explanation": "Explanation text"
-"""
-    elif question_type == "Fill-in-the-Blank":
-        prompt += """      "answer": "correct word or phrase"
-"""
-    else:  # Short Answer
-        prompt += """      "model_answer": "Sample correct answer"
-"""
-
-    prompt += """    }}
-  ]
-}}
+   
 
 Here are the lecture notes:
 
