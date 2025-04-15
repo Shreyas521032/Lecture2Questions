@@ -1,4 +1,11 @@
 nltk
+matplotlib.pyplot
+seaborn
+wordcloud
+sklearn.feature_extraction.text
+string
+nltk.tokenize
+nltk.corpus
 requests
 streamlit
 google-generativeai
