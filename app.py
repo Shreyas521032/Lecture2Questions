@@ -509,26 +509,6 @@ def main():
                 <h2>{len(history_df['file'].unique())}</h2>
                 </div>
                 """, unsafe_allow_html=True)
-            
-            # Additional stats row (modified)
-            if len(history_df) > 0:
-                col4, col6 = st.columns(2)
-                with col4:
-                    total_questions = history_df['count'].sum()
-                    st.markdown(f"""
-                    <div class="stats-card">
-                    <h4>🧩 Total Questions Created</h4>
-                    <h2>{total_questions}</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col6:
-                    most_common_difficulty = history_df['difficulty'].mode()[0]
-                    st.markdown(f"""
-                    <div class="stats-card">
-                    <h4>🎯 Most Common Difficulty</h4>
-                    <h2>{most_common_difficulty}</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
                 
                 # New analytics section
                 st.markdown("<h3 class='subheader'>📊 Detailed Analytics</h3>", unsafe_allow_html=True)
