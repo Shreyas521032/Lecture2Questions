@@ -349,14 +349,14 @@ def main():
             
             # Display uploaded files with remove option
             if len(st.session_state.uploaded_files) > 0:
-                st.markdown("### 📂 Selected Files")
+                st.markdown("### 📂 File History")
                 st.markdown('<div class="file-list">', unsafe_allow_html=True)
                 for i, file in enumerate(st.session_state.uploaded_files):
                     st.markdown(
                         f'<div class="file-item">'
                         f'<span class="file-name">{file["name"]}</span>'
                         f'<span class="file-size">{file["size"]}</span>'
-                        f'<span class="remove-btn" onclick="removeFile({i})">🗑️</span>'
+                        f'<span class="remove-btn" onclick="removeFile({i})"></span>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
