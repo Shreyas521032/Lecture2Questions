@@ -22,7 +22,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 import spacy
 from rake_nltk import Rake
 import random
-import openai
+import google.generativeai as genai
 
 # Set page configuration
 st.set_page_config(
@@ -125,12 +125,12 @@ def extract_text_from_txt(txt_file):
     return txt_file.getvalue().decode("utf-8")
 
 # Function to generate questions using OpenAI API
-def generate_questions_with_openai(text, question_type, difficulty, api_key):
-    # Set up OpenAI client
+def generate_questions_with_gemini(text, question_type, difficulty, api_key):
+    # Set up Gemini client
     if not api_key:
         return None
     
-    openai.api_key = api_key
+    genai.configure(api_key=api_key)
     
     # Truncate text if too long (limit to ~4000 tokens)
     max_chars = 12000  # Approximate for 4000 tokens
@@ -210,39 +210,27 @@ Format your response as a JSON object with the following structure:
   ]
 }
 
-Here are the lecture notes:
-"""
-
-    prompt += text
 
     try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an expert educator creating exam questions."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=2000
-        )
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
         
-        result = response.choices[0].message.content
+        # Extract response text
+        result = response.text
         
         # Extract JSON from the response
         try:
-            # Try to find JSON in the response
             json_match = re.search(r'({[\s\S]*})', result)
             if json_match:
                 json_str = json_match.group(1)
                 return json.loads(json_str)
-            else:
-                return json.loads(result)
+            return json.loads(result)
         except json.JSONDecodeError:
-            st.error("Failed to parse OpenAI response as JSON. Using fallback method instead.")
+            st.error("Failed to parse Gemini response as JSON. Using fallback method instead.")
             return None
             
     except Exception as e:
-        st.error(f"OpenAI API error: {str(e)}")
+        st.error(f"Gemini API error: {str(e)}")
         return None
 
 # Fallback method for generating questions without OpenAI
@@ -495,7 +483,7 @@ def main():
         st.markdown("### Settings")
         
         # OpenAI API key input
-        api_key = st.text_input("OpenAI API Key (Optional)", type="password", 
+        api_key = st.text_input("AIzaSyC0gjQQgnOUfjEowLmFB3crn-UzWIBXQHg", type="password", 
                                help="Enter your OpenAI API key. If not provided, the app will use a fallback method.")
         
         st.markdown("---")
@@ -556,7 +544,7 @@ def main():
                 # Try OpenAI first if API key is provided
                 if api_key:
                     try:
-                        questions_data = generate_questions_with_openai(
+                        questions_data = generate_questions_with_gemini(
                             text, question_type, difficulty, api_key
                         )
                     except Exception as e:
