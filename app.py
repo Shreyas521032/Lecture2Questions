@@ -61,9 +61,7 @@ except OSError:
     os.system("python -m spacy download en_core_web_sm")
     try:
     nlp = spacy.load("en_core_web_sm")
-except OSError:
-    # If spaCy model is not available, use a simple fallback approach
-    st.warning("spaCy model not available. Using simplified NLP processing.")
+
     
     # Create a minimal class to mimic spaCy functionality
     class SimpleNLP:
