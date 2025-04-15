@@ -69,7 +69,7 @@ def generate_with_gemini(text, question_type, difficulty, api_key):
         genai.configure(api_key=api_key)
         
         # Use the correct model name
-        model = genai.GenerativeModel('gemini-1.0-pro')  # Updated model name
+        model = genai.GenerativeModel('gemini-pro')  # Updated model name
         
         prompt = f"""
         Generate 5 {difficulty.lower()} {question_type} questions based on this content.
