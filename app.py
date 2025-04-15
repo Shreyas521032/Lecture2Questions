@@ -474,7 +474,7 @@ def main():
     st.markdown(
         """
         <div class="footer">
-            🧠 AI Question Generator<br>
+            🧠 Lecture2Exam<br>
             Make learning more effective with AI-powered assessments ✨<br>
             Made with teamwork of Shreyas, Shaurya and Mahati 🎯
         </div>
