@@ -7,3 +7,4 @@ spacy
 rake-nltk
 google-generativeai
 python-docx
+python-pptx
