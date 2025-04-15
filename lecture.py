@@ -3,18 +3,6 @@ from io import BytesIO
 import google.generativeai as genai
 import pandas as pd
 from datetime import datetime
-import matplotlib.pyplot as plt
-import seaborn as sns
-from wordcloud import WordCloud
-from sklearn.feature_extraction.text import TfidfVectorizer
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-import nltk
-import string
-
-# Download NLTK resources
-nltk.download('punkt')
-nltk.download('stopwords')
 
 # Set page configuration
 st.set_page_config(
@@ -173,34 +161,35 @@ st.markdown("""
         background-color: #DBEAFE;
         border-bottom: 3px solid #3B82F6;
     }
-    /* Graph container styling */
-    .graph-container {
+    /* File list styling */
+    .file-list {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #F8FAFC;
+        border-radius: 8px;
+    }
+    .file-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        margin-bottom: 5px;
         background-color: white;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    /* TF-IDF styling */
-    .tfidf-container {
-        background-color: #F0FDF4;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        border-left: 5px solid #10B981;
+    .file-name {
+        flex-grow: 1;
     }
-    .tfidf-header {
-        color: #065F46;
-        font-weight: bold;
-        margin-bottom: 15px;
+    .file-size {
+        color: #64748B;
+        font-size: 0.8rem;
     }
-    /* Word cloud styling */
-    .wordcloud-container {
-        background-color: #F5F3FF;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        border-left: 5px solid #8B5CF6;
+    .remove-btn {
+        color: #DC2626;
+        cursor: pointer;
+        margin-left: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -209,8 +198,9 @@ st.markdown("""
 if 'generation_history' not in st.session_state:
     st.session_state.generation_history = []
 
-if 'processed_texts' not in st.session_state:
-    st.session_state.processed_texts = []
+# File management
+if 'uploaded_files' not in st.session_state:
+    st.session_state.uploaded_files = []
 
 def extract_text(file):
     try:
@@ -247,75 +237,6 @@ def extract_text(file):
     except Exception as e:
         st.error(f"Error processing file: {str(e)}")
         return ""
-
-def preprocess_text(text):
-    """Tokenize and clean text for TF-IDF analysis"""
-    # Tokenize
-    tokens = word_tokenize(text.lower())
-    
-    # Remove punctuation and stopwords
-    stop_words = set(stopwords.words('english'))
-    tokens = [word for word in tokens if word not in stop_words and word not in string.punctuation]
-    
-    # Remove numbers and single characters
-    tokens = [word for word in tokens if word.isalpha() and len(word) > 1]
-    
-    return " ".join(tokens)
-
-def calculate_tfidf(texts):
-    """Calculate TF-IDF scores for a list of documents"""
-    # Preprocess all texts
-    processed_texts = [preprocess_text(text) for text in texts]
-    
-    # Create TF-IDF vectorizer
-    vectorizer = TfidfVectorizer(max_features=50)
-    tfidf_matrix = vectorizer.fit_transform(processed_texts)
-    
-    # Get feature names and scores
-    feature_names = vectorizer.get_feature_names_out()
-    tfidf_scores = tfidf_matrix.toarray()
-    
-    return feature_names, tfidf_scores
-
-def plot_tfidf(feature_names, tfidf_scores, title="TF-IDF Scores"):
-    """Create a bar plot of top TF-IDF terms"""
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Get average scores across documents
-    avg_scores = tfidf_scores.mean(axis=0)
-    
-    # Create DataFrame for visualization
-    df = pd.DataFrame({
-        'Term': feature_names,
-        'TF-IDF Score': avg_scores
-    }).sort_values('TF-IDF Score', ascending=False).head(20)
-    
-    # Create bar plot
-    sns.barplot(x='TF-IDF Score', y='Term', data=df, palette='viridis', ax=ax)
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel('TF-IDF Score')
-    ax.set_ylabel('')
-    
-    return fig
-
-def generate_wordcloud(text):
-    """Generate a word cloud from text"""
-    # Preprocess text
-    processed_text = preprocess_text(text)
-    
-    # Generate word cloud
-    wordcloud = WordCloud(width=800, height=400, 
-                         background_color='white',
-                         colormap='viridis',
-                         max_words=50).generate(processed_text)
-    
-    # Plot
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.imshow(wordcloud, interpolation='bilinear')
-    ax.axis('off')
-    ax.set_title('Key Terms Word Cloud', fontsize=14)
-    
-    return fig
 
 def format_questions(raw_questions):
     """Format the questions with better spacing and styling"""
@@ -385,6 +306,11 @@ def generate_with_gemini(text, question_type, difficulty, api_key, num_questions
         st.info("💡 Try using 'gemini-1.0-pro' if this model isn't available")
         return None
 
+def remove_file(index):
+    """Remove a file from the uploaded files list"""
+    st.session_state.uploaded_files.pop(index)
+    st.experimental_rerun()
+
 def main():
     st.markdown('<h1 class="main-header">🧠 Lecture2Exam ✨</h1>', unsafe_allow_html=True)
     
@@ -398,19 +324,46 @@ def main():
             st.markdown('<div class="config-section">', unsafe_allow_html=True)
             st.markdown("### 🔑 API Configuration")
             
-            api_key = st.text_input(" API Key", type="password", 
+            api_key = st.text_input("API Key", type="password", 
                                    help="Get your key from Google AI Studio")
             st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="file-uploader">', unsafe_allow_html=True)
             st.markdown("### 📄 Upload Learning Material")
-            uploaded_file = st.file_uploader("Choose file", 
-                                           type=["txt", "docx", "pptx", "pdf"])
+            
+            # Multi-file uploader
+            uploaded_files = st.file_uploader("Choose files", 
+                                           type=["txt", "docx", "pptx", "pdf"],
+                                           accept_multiple_files=True)
+            
+            # Store uploaded files in session state
+            if uploaded_files and len(uploaded_files) > 0:
+                for file in uploaded_files:
+                    if file.name not in [f['name'] for f in st.session_state.uploaded_files]:
+                        st.session_state.uploaded_files.append({
+                            'name': file.name,
+                            'size': f"{len(file.getvalue()) / 1024:.1f} KB",
+                            'file_obj': file
+                        })
+            
+            # Display uploaded files with remove option
+            if len(st.session_state.uploaded_files) > 0:
+                st.markdown("### 📂 Selected Files")
+                st.markdown('<div class="file-list">', unsafe_allow_html=True)
+                for i, file in enumerate(st.session_state.uploaded_files):
+                    st.markdown(
+                        f'<div class="file-item">'
+                        f'<span class="file-name">{file["name"]}</span>'
+                        f'<span class="file-size">{file["size"]}</span>'
+                        f'<span class="remove-btn" onclick="removeFile({i})">🗑️</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                st.markdown('</div>', unsafe_allow_html=True)
+            
             st.markdown('</div>', unsafe_allow_html=True)
             
-            if uploaded_file:
-                file_info = st.success(f"📑 File uploaded: {uploaded_file.name}")
-                
+            if len(st.session_state.uploaded_files) > 0:
                 st.markdown('<div class="config-section">', unsafe_allow_html=True)
                 st.markdown("### ⚙️ Question Settings")
                 
@@ -444,27 +397,32 @@ def main():
                         st.error("⚠️ Please enter your API key")
                     else:
                         with st.spinner("🧙‍♂️ Generating intelligent questions..."):
-                            text = extract_text(uploaded_file)
-                            if text:
-                                # Store processed text for TF-IDF analysis
-                                st.session_state.processed_texts.append(text)
-                                
+                            # Combine all files' content
+                            combined_text = ""
+                            for file_info in st.session_state.uploaded_files:
+                                file = file_info['file_obj']
+                                text = extract_text(file)
+                                if text:
+                                    combined_text += f"\n\n--- {file.name} ---\n\n{text}"
+                            
+                            if combined_text:
                                 # Try with latest model first, fallback to 1.0 if needed
-                                questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                                questions = generate_with_gemini(combined_text, question_type, difficulty, api_key, num_questions)
                                 if not questions:
                                     # Fallback to gemini-1.0-pro if latest model fails
                                     genai.configure(api_key=api_key)
                                     model = genai.GenerativeModel('gemini-1.0-pro')
-                                    questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                                    questions = generate_with_gemini(combined_text, question_type, difficulty, api_key, num_questions)
                                 
                                 if questions:
                                     st.session_state.questions = questions
                                     st.session_state.formatted_questions = format_questions(questions)
                                     
                                     # Add to history
+                                    file_names = ", ".join([f['name'] for f in st.session_state.uploaded_files])
                                     st.session_state.generation_history.append({
                                         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                        'file': uploaded_file.name,
+                                        'file': file_names,
                                         'type': question_type,
                                         'difficulty': difficulty,
                                         'count': num_questions,
@@ -474,7 +432,7 @@ def main():
                                     st.session_state.questions = None
         
         with col2:
-            if uploaded_file and 'questions' in st.session_state and st.session_state.questions:
+            if len(st.session_state.uploaded_files) > 0 and 'questions' in st.session_state and st.session_state.questions:
                 st.markdown(f"<h2 class='subheader'>✅ Generated {question_type} Questions</h2>", unsafe_allow_html=True)
                 
                 # Show formatted questions with improved spacing
@@ -495,9 +453,16 @@ def main():
                 with col_b:
                     if st.button("🔄 Regenerate Questions", use_container_width=True):
                         with st.spinner("🔄 Regenerating questions..."):
-                            text = extract_text(uploaded_file)
-                            if text:
-                                questions = generate_with_gemini(text, question_type, difficulty, api_key, num_questions)
+                            # Combine all files' content again
+                            combined_text = ""
+                            for file_info in st.session_state.uploaded_files:
+                                file = file_info['file_obj']
+                                text = extract_text(file)
+                                if text:
+                                    combined_text += f"\n\n--- {file.name} ---\n\n{text}"
+                            
+                            if combined_text:
+                                questions = generate_with_gemini(combined_text, question_type, difficulty, api_key, num_questions)
                                 if questions:
                                     st.session_state.questions = questions
                                     st.session_state.formatted_questions = format_questions(questions)
@@ -572,58 +537,6 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
             
-            # Visualizations section
-            st.markdown("<h3 class='subheader'>📊 Visual Analytics</h3>", unsafe_allow_html=True)
-            
-            # Create tabs for different visualizations
-            viz_tab1, viz_tab2, viz_tab3 = st.tabs(["📊 Question Types", "📈 Difficulty Levels", "📌 TF-IDF Analysis"])
-            
-            with viz_tab1:
-                st.markdown('<div class="graph-container">', unsafe_allow_html=True)
-                fig, ax = plt.subplots(figsize=(10, 5))
-                sns.countplot(data=history_df, y='type', order=history_df['type'].value_counts().index, 
-                             palette='Blues_r', ax=ax)
-                ax.set_title('Question Types Distribution', fontsize=14)
-                ax.set_xlabel('Count')
-                ax.set_ylabel('Question Type')
-                st.pyplot(fig)
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            with viz_tab2:
-                st.markdown('<div class="graph-container">', unsafe_allow_html=True)
-                fig, ax = plt.subplots(figsize=(10, 5))
-                sns.countplot(data=history_df, y='difficulty', order=['Easy', 'Medium', 'Hard'],
-                              palette=['#10B981', '#F59E0B', '#EF4444'], ax=ax)
-                ax.set_title('Difficulty Level Distribution', fontsize=14)
-                ax.set_xlabel('Count')
-                ax.set_ylabel('Difficulty Level')
-                st.pyplot(fig)
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            with viz_tab3:
-                if len(st.session_state.processed_texts) > 0:
-                    st.markdown('<div class="tfidf-container">', unsafe_allow_html=True)
-                    st.markdown('<h4 class="tfidf-header">🔍 Top Important Terms (TF-IDF Analysis)</h4>', unsafe_allow_html=True)
-                    
-                    # Calculate TF-IDF
-                    feature_names, tfidf_scores = calculate_tfidf(st.session_state.processed_texts)
-                    
-                    # Plot TF-IDF
-                    fig = plot_tfidf(feature_names, tfidf_scores)
-                    st.pyplot(fig)
-                    
-                    # Show word cloud
-                    st.markdown('<div class="wordcloud-container">', unsafe_allow_html=True)
-                    st.markdown('<h4 class="tfidf-header">☁️ Key Terms Word Cloud</h4>', unsafe_allow_html=True)
-                    combined_text = " ".join(st.session_state.processed_texts)
-                    wordcloud_fig = generate_wordcloud(combined_text)
-                    st.pyplot(wordcloud_fig)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
-                else:
-                    st.info("No text data available for TF-IDF analysis. Generate questions first.")
-            
             # Display history table
             st.markdown("<h3 class='subheader'>📜 Recent Generation Activity</h3>", unsafe_allow_html=True)
             
@@ -635,7 +548,6 @@ def main():
             # Option to clear history
             if st.button("🗑️ Clear History"):
                 st.session_state.generation_history = []
-                st.session_state.processed_texts = []
                 st.experimental_rerun()
 
     # Footer
@@ -643,13 +555,25 @@ def main():
     st.markdown(
         """
         <div class="footer">
-            🧠 Lecture2Exam - AI-Powered Assessment Generator<br>
+            🧠 Lecture2Exam<br>
             Make learning more effective with AI-powered assessments ✨<br>
             Made with teamwork of Shreyas, Shaurya and Mahati 🎯
         </div>
         """, 
         unsafe_allow_html=True
     )
+    
+    # Add JavaScript for file removal
+    st.markdown("""
+    <script>
+    function removeFile(index) {
+        window.parent.postMessage({
+            type: 'streamlit:setComponentValue',
+            value: index
+        }, '*');
+    }
+    </script>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
