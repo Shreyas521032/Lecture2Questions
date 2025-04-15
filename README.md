@@ -1,6 +1,6 @@
 # Lecture2Exam - AI-Powered Assessment Generator 🧠✨
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://lecture2exam.streamlit.app/)
+🔗 **Deployed Project:** [Live Streamlit App](https://lecture2questions-shreyas-shaurya-mahati.streamlit.app/)
 
 Transform learning materials into intelligent exam questions using AI. Perfect for educators, students, and professionals!
 
