@@ -182,88 +182,47 @@ else:  # Short Answer
 - Focus on key concepts from the lecture
 """
 
-prompt += f"""
-Format your response as a JSON object with the following structure:
-{{
-  "questions": [
-    {{
-      "question": "Question text",
-      "type": "{question_type}",
-"""
-
-if question_type == "MCQ":
-    prompt += """
-      "options": ["A. option1", "B. option2", "C. option3", "D. option4"],
-      "correct_answer": "A",
-      "explanation": "Explanation text"
-"""
-elif question_type == "Fill-in-the-Blank":
-    prompt += """
-      "answer": "correct word or phrase"
-"""
-else:  # Short Answer
-    prompt += """
-      "model_answer": "Sample correct answer"
-"""
-
-prompt += """
+try:
+    # Configure the model with safety settings
+    generation_config = {
+        "temperature": 0.7,
+        "max_output_tokens": 2000,
     }
-  ]
-}
+    
+    safety_settings = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+    ]
 
-Here are the lecture notes:
-""" + text
-
-Format your response as a JSON object with the following structure:
-{{
-  "questions": [
-    {{
-      "question": "Question text",
-      "type": "{question_type}",
-"""
-
-    if question_type == "MCQ":
-        prompt += """
-      "options": ["A. option1", "B. option2", "C. option3", "D. option4"],
-      "correct_answer": "A",
-      "explanation": "Explanation text"
-"""
-    elif question_type == "Fill-in-the-Blank":
-        prompt += """
-      "answer": "correct word or phrase"
-"""
-    else:  # Short Answer
-        prompt += """
-      "model_answer": "Sample correct answer"
-"""
-
-    prompt += """
-    }
-  ]
-}
-
-
+    model = genai.GenerativeModel('gemini-pro',
+                                generation_config=generation_config,
+                                safety_settings=safety_settings)
+    
+    response = model.generate_content(prompt)
+    
+    # Extract response text
+    if response.candidates and response.candidates[0].content.parts:
+        result = response.candidates[0].content.parts[0].text
+    else:
+        raise ValueError("No valid response from Gemini API")
+    
+    # Extract JSON from the response
     try:
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(prompt)
-        
-        # Extract response text
-        result = response.text
-        
-        # Extract JSON from the response
-        try:
-            json_match = re.search(r'({[\s\S]*})', result)
-            if json_match:
-                json_str = json_match.group(1)
-                return json.loads(json_str)
-            return json.loads(result)
-        except json.JSONDecodeError:
-            st.error("Failed to parse Gemini response as JSON. Using fallback method instead.")
-            return None
-            
-    except Exception as e:
-        st.error(f"Gemini API error: {str(e)}")
+        json_match = re.search(r'({[\s\S]*})', result)
+        if json_match:
+            json_str = json_match.group(1)
+            return json.loads(json_str)
+        return json.loads(result)
+    except json.JSONDecodeError as e:
+        st.error(f"Failed to parse Gemini response: {str(e)}")
         return None
+
+except Exception as e:
+    st.error(f"Gemini API error: {str(e)}")
+    return None
+    
 
 # Fallback method for generating questions without OpenAI
 def generate_questions_fallback(text, question_type, difficulty, rake_nlp, spacy_nlp):
