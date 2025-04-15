@@ -151,8 +151,7 @@ def generate_questions_with_gemini(text, question_type, difficulty, api_key):
     }
     
     # Build the prompt
-    # Build the prompt
-prompt = f"""
+    prompt = f"""
 You are an expert educator creating exam questions based on lecture notes. 
 Create 5 {difficulty.lower()} {question_type} questions about the following lecture content.
 Question difficulty should be {difficulty.lower()}, focusing on {difficulty_descriptions[difficulty]}.
@@ -160,8 +159,8 @@ Question difficulty should be {difficulty.lower()}, focusing on {difficulty_desc
 For each question:
 """
 
-if question_type == "MCQ":
-    prompt += """
+    if question_type == "MCQ":
+        prompt += """
 - Create a clear question stem
 - Provide 4 options labeled A, B, C, D
 - Exactly one option should be correct
@@ -169,59 +168,87 @@ if question_type == "MCQ":
 - Mark the correct answer
 - Provide a brief explanation why the correct answer is right
 """
-elif question_type == "Fill-in-the-Blank":
-    prompt += """
+    elif question_type == "Fill-in-the-Blank":
+        prompt += """
 - Create a sentence with an important concept or term removed and replaced with _____
 - Provide the correct answer
 - Make sure the missing term is significant to understanding the content
 """
-else:  # Short Answer
-    prompt += """
+    else:  # Short Answer
+        prompt += """
 - Create a question that requires explaining a concept, process, or relationship
 - Provide a model short answer (2-3 sentences)
 - Focus on key concepts from the lecture
 """
 
-try:
-    # Configure the model with safety settings
-    generation_config = {
-        "temperature": 0.7,
-        "max_output_tokens": 2000,
-    }
-    
-    safety_settings = [
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
-        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
-    ]
+    prompt += f"""
+Format your response as a JSON object with the following structure:
+{{
+  "questions": [
+    {{
+      "question": "Question text",
+      "type": "{question_type}",
+"""
 
-    model = genai.GenerativeModel('gemini-pro',
-                                generation_config=generation_config,
-                                safety_settings=safety_settings)
-    
-    response = model.generate_content(prompt)
-    
-    # Extract response text
-    if response.candidates and response.candidates[0].content.parts:
-        result = response.candidates[0].content.parts[0].text
-    else:
-        raise ValueError("No valid response from Gemini API")
-    
-    # Extract JSON from the response
+    if question_type == "MCQ":
+        prompt += """      "options": ["A. option1", "B. option2", "C. option3", "D. option4"],
+      "correct_answer": "A",
+      "explanation": "Explanation text"
+"""
+    elif question_type == "Fill-in-the-Blank":
+        prompt += """      "answer": "correct word or phrase"
+"""
+    else:  # Short Answer
+        prompt += """      "model_answer": "Sample correct answer"
+"""
+
+    prompt += """    }}
+  ]
+}}
+
+Here are the lecture notes:
+
     try:
-        json_match = re.search(r'({[\s\S]*})', result)
-        if json_match:
-            json_str = json_match.group(1)
-            return json.loads(json_str)
-        return json.loads(result)
-    except json.JSONDecodeError as e:
-        st.error(f"Failed to parse Gemini response: {str(e)}")
-        return None
+        # Configure the model with safety settings
+        generation_config = {
+            "temperature": 0.7,
+            "max_output_tokens": 2000,
+        }
+        
+        safety_settings = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+        ]
 
-except Exception as e:
-    st.error(f"Gemini API error: {str(e)}")
-    return None
+        model = genai.GenerativeModel('gemini-pro',
+                                    generation_config=generation_config,
+                                    safety_settings=safety_settings)
+        
+        response = model.generate_content(prompt)
+        
+        # Extract response text
+        if response.candidates and response.candidates[0].content.parts:
+            result = response.candidates[0].content.parts[0].text
+        else:
+            raise ValueError("No valid response from Gemini API")
+        
+        # Extract JSON from the response
+        try:
+            json_match = re.search(r'({[\s\S]*})', result)
+            if json_match:
+                json_str = json_match.group(1)
+                return json.loads(json_str)
+            return json.loads(result)
+        except json.JSONDecodeError as e:
+            st.error(f"Failed to parse Gemini response: {str(e)}")
+            return None
+
+    except Exception as e:
+        st.error(f"Gemini API error: {str(e)}")
+        return None
+        
     
 
 # Fallback method for generating questions without OpenAI
