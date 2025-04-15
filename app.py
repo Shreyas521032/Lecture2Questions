@@ -1,8 +1,5 @@
 import streamlit as st
-import os
-import base64
 from io import BytesIO
-from datetime import datetime
 import google.generativeai as genai
 
 # Set page configuration
@@ -35,57 +32,54 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# File processing functions
-def extract_text_from_txt(txt_file):
-    return txt_file.getvalue().decode("utf-8")
-
-def extract_text_from_docx(docx_file):
-    from docx import Document
-    doc = Document(BytesIO(docx_file.read()))
-    return "\n".join([para.text for para in doc.paragraphs])
-
-def extract_text_from_pptx(pptx_file):
-    from pptx import Presentation
-    prs = Presentation(BytesIO(pptx_file.read()))
-    text = []
-    for slide in prs.slides:
-        for shape in slide.shapes:
-            if hasattr(shape, "text"):
-                text.append(shape.text)
-    return "\n".join(text)
-
 def extract_text(file):
-    if file.type == "text/plain":
-        return extract_text_from_txt(file)
-    elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        return extract_text_from_docx(file)
-    elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-        return extract_text_from_pptx(file)
-    return ""
-
-# Gemini API integration
-def generate_with_gemini(text, question_type, difficulty, api_key):
-    genai.configure(api_key=api_key)
-    
-    # Truncate very long text
-    text = text[:10000] if len(text) > 10000 else text
-    
-    prompt = f"""
-    Generate 5 {difficulty.lower()} {question_type} questions based on the following content.
-    For each question, provide:
-    - The question text
-    - Correct answer
-    - For MCQs: 3 incorrect options
-    - Brief explanation
-    
-    Content:
-    {text}
-    """
-    
     try:
+        if file.type == "text/plain":
+            return file.getvalue().decode("utf-8")
+        
+        elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            from docx import Document
+            doc = Document(BytesIO(file.read()))
+            return "\n".join([para.text for para in doc.paragraphs])
+        
+        elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+            from pptx import Presentation
+            prs = Presentation(BytesIO(file.read()))
+            text = []
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        text.append(shape.text)
+            return "\n".join(text)
+        
+        else:
+            st.error("Unsupported file type")
+            return ""
+    
+    except Exception as e:
+        st.error(f"Error processing file: {str(e)}")
+        return ""
+
+def generate_with_gemini(text, question_type, difficulty, api_key):
+    try:
+        genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-pro')
+        
+        prompt = f"""
+        Generate 5 {difficulty.lower()} {question_type} questions based on this content.
+        For each question include:
+        - Clear question text
+        - Correct answer
+        {"- 3 incorrect options (for MCQ)" if question_type == "MCQ" else ""}
+        - Brief explanation
+        
+        Content:
+        {text[:10000]}  # Using first 10k chars to avoid token limits
+        """
+        
         response = model.generate_content(prompt)
-        return response.text
+        return response.text if response else "Failed to generate questions"
+    
     except Exception as e:
         st.error(f"Gemini API error: {str(e)}")
         return None
@@ -96,60 +90,38 @@ def main():
     with st.sidebar:
         st.markdown("### Settings")
         api_key = st.text_input("Gemini API Key", type="password", 
-                               help="Enter your Gemini API key")
+                              help="Get your key from Google AI Studio")
         
-        st.markdown("### Upload Lecture Material")
-        uploaded_file = st.file_uploader("Choose a file", 
-                                        type=["txt", "docx", "pptx"])
+        st.markdown("### Upload Material")
+        uploaded_file = st.file_uploader("Choose file", 
+                                       type=["txt", "docx", "pptx"])
         
         if uploaded_file:
-            st.markdown("### Question Settings")
-            question_type = st.selectbox(
-                "Question Type",
-                ["MCQ", "Fill-in-the-Blank", "Short Answer"]
-            )
+            question_type = st.selectbox("Question Type", 
+                                       ["MCQ", "Fill-in-the-Blank", "Short Answer"])
+            difficulty = st.selectbox("Difficulty", ["Easy", "Medium", "Hard"])
             
-            difficulty = st.selectbox(
-                "Difficulty Level",
-                ["Easy", "Medium", "Hard"]
-            )
-            
-            generate_button = st.button("Generate Questions")
-
-    if uploaded_file:
-        text = extract_text(uploaded_file)
-        
-        with st.expander("Preview Extracted Text"):
-            st.text(text[:500] + "...")
-        
-        if generate_button:
-            if not api_key:
-                st.error("Please enter your Gemini API key")
-                return
-                
-            with st.spinner("Generating questions with Gemini AI..."):
-                result = generate_with_gemini(text, question_type, difficulty, api_key)
-                
-                if result:
-                    st.session_state.questions = result
-                    st.success("Questions generated successfully!")
+            if st.button("Generate Questions"):
+                if not api_key:
+                    st.error("Please enter your Gemini API key")
                 else:
-                    st.error("Failed to generate questions")
+                    with st.spinner("Generating questions..."):
+                        text = extract_text(uploaded_file)
+                        if text:
+                            questions = generate_with_gemini(text, question_type, difficulty, api_key)
+                            if questions:
+                                st.session_state.questions = questions
 
-        if 'questions' in st.session_state:
-            st.markdown(f"## Generated {question_type} Questions")
-            st.markdown(st.session_state.questions)
-            
-            # Download as text file
-            txt_file = BytesIO(st.session_state.questions.encode('utf-8'))
-            st.download_button(
-                label="Download Questions",
-                data=txt_file,
-                file_name=f"questions_{datetime.now().strftime('%Y%m%d')}.txt",
-                mime="text/plain"
-            )
-    else:
-        st.info("Please upload a file (TXT, DOCX, or PPTX) to generate questions")
+    if uploaded_file and 'questions' in st.session_state:
+        st.markdown(f"## Generated {question_type} Questions")
+        st.markdown(st.session_state.questions)
+        
+        st.download_button(
+            label="Download Questions",
+            data=BytesIO(st.session_state.questions.encode('utf-8')),
+            file_name="generated_questions.txt",
+            mime="text/plain"
+        )
 
 if __name__ == "__main__":
     main()
