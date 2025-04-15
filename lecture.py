@@ -151,7 +151,8 @@ def generate_questions_with_gemini(text, question_type, difficulty, api_key):
     }
     
     # Build the prompt
-    prompt = f"""
+    # Build the prompt
+prompt = f"""
 You are an expert educator creating exam questions based on lecture notes. 
 Create 5 {difficulty.lower()} {question_type} questions about the following lecture content.
 Question difficulty should be {difficulty.lower()}, focusing on {difficulty_descriptions[difficulty]}.
@@ -159,8 +160,8 @@ Question difficulty should be {difficulty.lower()}, focusing on {difficulty_desc
 For each question:
 """
 
-    if question_type == "MCQ":
-        prompt += """
+if question_type == "MCQ":
+    prompt += """
 - Create a clear question stem
 - Provide 4 options labeled A, B, C, D
 - Exactly one option should be correct
@@ -168,20 +169,51 @@ For each question:
 - Mark the correct answer
 - Provide a brief explanation why the correct answer is right
 """
-    elif question_type == "Fill-in-the-Blank":
-        prompt += """
+elif question_type == "Fill-in-the-Blank":
+    prompt += """
 - Create a sentence with an important concept or term removed and replaced with _____
 - Provide the correct answer
 - Make sure the missing term is significant to understanding the content
 """
-    else:  # Short Answer
-        prompt += """
+else:  # Short Answer
+    prompt += """
 - Create a question that requires explaining a concept, process, or relationship
 - Provide a model short answer (2-3 sentences)
 - Focus on key concepts from the lecture
 """
 
-    prompt += f"""
+prompt += f"""
+Format your response as a JSON object with the following structure:
+{{
+  "questions": [
+    {{
+      "question": "Question text",
+      "type": "{question_type}",
+"""
+
+if question_type == "MCQ":
+    prompt += """
+      "options": ["A. option1", "B. option2", "C. option3", "D. option4"],
+      "correct_answer": "A",
+      "explanation": "Explanation text"
+"""
+elif question_type == "Fill-in-the-Blank":
+    prompt += """
+      "answer": "correct word or phrase"
+"""
+else:  # Short Answer
+    prompt += """
+      "model_answer": "Sample correct answer"
+"""
+
+prompt += """
+    }
+  ]
+}
+
+Here are the lecture notes:
+""" + text
+
 Format your response as a JSON object with the following structure:
 {{
   "questions": [
