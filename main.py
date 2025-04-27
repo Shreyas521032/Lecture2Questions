@@ -261,7 +261,7 @@ def handle_multiple_files():
             with col2:
                 if st.button(f"🗑️ Remove", key=f"remove_{i}"):
                     st.session_state.uploaded_files.pop(i)
-                    st.experimental_rerun()
+                    st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -414,7 +414,7 @@ def display_history_analytics():
         # Option to clear history
         if st.button("🗑️ Clear History"):
             st.session_state.generation_history = []
-            st.experimental_rerun()
+            st.rerun()
 
 def main():
     # Initialize session state
