@@ -538,7 +538,7 @@ def main():
                                     combined_text += f"\n\n--- {file.name} ---\n\n{text}"
                             
                             if combined_text:
-                                questions = generate_with_gemini(combined_text, question_type, difficulty, api_key, num_questions)
+                                questions = generate_questions(combined_text, question_type, difficulty, api_key, num_questions)
                                 if questions:
                                     st.session_state.questions = questions
                                     st.session_state.formatted_questions = format_questions(questions)
