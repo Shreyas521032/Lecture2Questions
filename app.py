@@ -4,14 +4,14 @@ import google.generativeai as genai
 import pandas as pd
 from datetime import datetime
 import plotly.express as px
-[theme]
-base="light"
+
 # Set page configuration
 st.set_page_config(
     page_title="Lecture2Exam",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    theme="light"
 )
 
 # Enhanced CSS styling with more vibrant colors and better UI elements
