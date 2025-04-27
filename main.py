@@ -504,7 +504,7 @@ def main():
                             st.session_state.formatted_questions = format_questions(questions)
                             history_entry = {
                     'timestamp': datetime.now().isoformat(),  # ISO format for pandas parsing
-                    'file': ", ".join([f['name'] for f in st.session_state.uploaded_files]),
+                    'file' : file_names,
                     'type': question_type,
                     'difficulty': difficulty,
                     'count': num_questions,
