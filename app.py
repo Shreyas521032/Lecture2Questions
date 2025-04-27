@@ -4,7 +4,8 @@ import google.generativeai as genai
 import pandas as pd
 from datetime import datetime
 import plotly.express as px
-
+[theme]
+base="light"
 # Set page configuration
 st.set_page_config(
     page_title="Lecture2Exam",
