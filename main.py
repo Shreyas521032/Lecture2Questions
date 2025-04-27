@@ -364,7 +364,7 @@ def main():
                              border-top: 1px solid #E2E8F0; animation: fadeIn 1s ease-in;">
         🧠 Lecture2Exam<br>
         Making assessment creation effortless with AI ✨<br>
-        <small>Made with ❤️ by Shreyas, Shaurya and Mahati</small>
+        <small>Made with ❤️ by Shreyas</small>
     </div>
     <style>
     @keyframes fadeIn {
