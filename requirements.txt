@@ -10,3 +10,6 @@ python-docx
 python-pptx
 PyPDF2
 plotly.express
+plotly
+numpy
+openpyxl
