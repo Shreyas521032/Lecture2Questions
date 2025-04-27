@@ -11,7 +11,13 @@ st.set_page_config(
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed",
-    theme="light"
+    theme={
+        "base": "light",
+        "primaryColor": "#2563EB",
+        "backgroundColor": "#FFFFFF",
+        "secondaryBackgroundColor": "#F0F9FF",
+        "textColor": "#1E40AF"
+    }
 )
 
 # Enhanced CSS styling with more vibrant colors and better UI elements
