@@ -13,7 +13,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Enhanced CSS styling with more vibrant colors and better UI elements
 st.markdown("""
 <style>
     .main-header {
@@ -22,7 +21,7 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
         font-weight: bold;
-        text-shadow: 1px 1px 3px rgba(0,0,0,0.15);
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.15);
         padding: 1rem;
         background: linear-gradient(90deg, #EFF6FF 0%, #DBEAFE 100%);
         border-radius: 12px;
@@ -33,12 +32,12 @@ st.markdown("""
         padding: 20px;
         margin-bottom: 25px;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         transition: transform 0.2s ease;
     }
     .question-box:hover {
         transform: translateY(-3px);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     }
     .stButton>button {
         background-color: #2563EB;
@@ -52,7 +51,7 @@ st.markdown("""
     .stButton>button:hover {
         background-color: #1D4ED8;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
     .error-message {
         color: #DC2626;
@@ -104,12 +103,12 @@ st.markdown("""
         padding: 20px;
         border-radius: 12px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         transition: transform 0.2s;
     }
     .stats-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     }
     .stats-card h4 {
         color: #1E40AF;
@@ -132,7 +131,7 @@ st.markdown("""
         padding: 20px;
         border-radius: 10px;
         margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
     .action-button {
         margin-top: 8px;
@@ -178,7 +177,7 @@ st.markdown("""
         margin-bottom: 5px;
         background-color: white;
         border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     .file-name {
         flex-grow: 1;
@@ -194,6 +193,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # History tracking
 if 'generation_history' not in st.session_state:
