@@ -545,6 +545,16 @@ def main():
                                 if questions:
                                     st.session_state.questions = questions
                                     st.session_state.formatted_questions = format_questions(questions)
+                                    file_names = ", ".join([f['name'] for f in st.session_state.uploaded_files])
+                                    st.session_state.generation_history.append({
+                            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            'file': file_names,
+                            'type': question_type,
+                            'difficulty': difficulty,
+                            'count': num_questions,
+                            'raw_questions': questions
+                        })          
+                                    st.rerun()
             else:
                 st.markdown("""
                 <div style="background-color: #F0F9FF; padding: 30px; border-radius: 10px; text-align: center; margin-top: 50px;">
