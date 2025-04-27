@@ -500,6 +500,7 @@ def main():
                     else:
                         questions = generate_questions(api_key, question_type, difficulty, num_questions)
                         if questions:
+                            file_names = ", ".join([f['name'] for f in st.session_state.uploaded_files])
                             st.session_state.questions = questions
                             st.session_state.formatted_questions = format_questions(questions)
                             history_entry = {
@@ -543,6 +544,7 @@ def main():
                             if combined_text:
                                 questions = generate_questions(api_key, question_type, difficulty, num_questions)
                                 if questions:
+                                    file_names = ", ".join([f['name'] for f in st.session_state.uploaded_files])
                                     st.session_state.questions = questions
                                     st.session_state.formatted_questions = format_questions(questions)
                                     file_names = ", ".join([f['name'] for f in st.session_state.uploaded_files])
