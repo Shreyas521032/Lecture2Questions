@@ -134,15 +134,19 @@ def extract_text(file):
     """Extract text from various file formats"""
     try:
         if file.type == "text/plain":
+            # Properly handle text files by resetting file position
+            file.seek(0)
             return file.getvalue().decode("utf-8")
         
         elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
             from docx import Document
+            file.seek(0)  # Reset file position
             doc = Document(BytesIO(file.read()))
             return "\n".join([para.text for para in doc.paragraphs])
         
         elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
             from pptx import Presentation
+            file.seek(0)  # Reset file position
             prs = Presentation(BytesIO(file.read()))
             text = []
             for slide in prs.slides:
@@ -153,6 +157,7 @@ def extract_text(file):
         
         elif file.type == "application/pdf":
             import PyPDF2
+            file.seek(0)  # Reset file position
             pdf_reader = PyPDF2.PdfReader(BytesIO(file.read()))
             text = ""
             for page in pdf_reader.pages:
@@ -225,27 +230,47 @@ def handle_multiple_files():
                                    type=["txt", "docx", "pptx", "pdf"],
                                    accept_multiple_files=True)
     
+    # Initialize session state for file storage if it doesn't exist
+    if 'uploaded_files' not in st.session_state:
+        st.session_state.uploaded_files = []
+    
     # Process newly uploaded files
     if uploaded_files:
+        # Clear existing files list first to avoid duplicates
+        seen_files = {f['name']: f for f in st.session_state.uploaded_files}
+        
         for file in uploaded_files:
-            file_hash = hash(file.name + str(file.size))
-            if file_hash not in [f['hash'] for f in st.session_state.uploaded_files]:
-                # Extract preview text for display
-                preview = extract_text(file)[:100] + "..." if len(extract_text(file)) > 100 else extract_text(file)
+            # Reset file position to beginning to ensure proper reading
+            file.seek(0)
+            
+            # Extract text and check if it's empty
+            preview_text = extract_text(file)
+            if not preview_text or preview_text.strip() == "":
+                st.warning(f"No content could be extracted from {file.name}. Please check the file.")
+                continue
                 
-                st.session_state.uploaded_files.append({
-                    'name': file.name,
-                    'size': f"{len(file.getvalue()) / 1024:.1f} KB",
-                    'hash': file_hash,
-                    'file_obj': file,
-                    'preview': preview,
-                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    'type': file.type
-                })
+            # Generate preview for display
+            preview = preview_text[:100] + "..." if len(preview_text) > 100 else preview_text
+            
+            # Store the file with its content
+            seen_files[file.name] = {
+                'name': file.name,
+                'size': f"{len(file.getvalue()) / 1024:.1f} KB",
+                'hash': hash(file.name + str(file.size)),
+                'file_obj': file,
+                'preview': preview,
+                'content': preview_text,  # Store the full content
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
+                'type': file.type
+            }
+        
+        st.session_state.uploaded_files = list(seen_files.values())
     
     # Display uploaded files with interactive cards
     if st.session_state.uploaded_files:
         st.markdown("### 📂 Your Materials")
+        
+        files_to_remove = []  # Track files to remove
         
         for i, file in enumerate(st.session_state.uploaded_files):
             col1, col2 = st.columns([4, 1])
@@ -256,12 +281,25 @@ def handle_multiple_files():
                     st.write(f"**Type:** {file['type'].split('/')[-1].upper()}")
                     st.write(f"**Added:** {file['timestamp']}")
                     st.write("**Preview:**")
-                    st.markdown(f"<div style='background:#f5f5f5;padding:10px;border-radius:5px;'>{file['preview']}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:#f5f5f5;padding:10px;border-radius:5px;font-family:monospace;white-space:pre-wrap;'>{file['preview']}</div>", unsafe_allow_html=True)
+                    
+                    # Show content length info
+                    content_len = len(file.get('content', ''))
+                    if content_len > 0:
+                        st.success(f"✅ Extracted {content_len} characters of text")
+                    else:
+                        st.error("❌ No content could be extracted")
             
             with col2:
-                if st.button(f"🗑️ Remove", key=f"remove_{i}"):
-                    st.session_state.uploaded_files.pop(i)
-                    st.rerun()
+                # Fixed: Individual file removal
+                if st.button(f"🗑️ Remove", key=f"remove_{file['name']}_{i}"):
+                    files_to_remove.append(i)
+        
+        # Remove files that were marked for deletion
+        if files_to_remove:
+            for index in sorted(files_to_remove, reverse=True):
+                st.session_state.uploaded_files.pop(index)
+            st.experimental_rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -272,15 +310,19 @@ def generate_questions(api_key, question_type, difficulty, num_questions):
     with st.spinner("🧙‍♂️ Creating intelligent questions..."):
         # Combine content from all files with better organization
         combined_text = ""
-        for file_info in st.session_state.uploaded_files:
-            file = file_info['file_obj']
-            text = extract_text(file)
-            if text:
-                # Add better file context separation
-                combined_text += f"\n\n==== CONTENT FROM: {file.name} ====\n\n{text}\n\n"
         
-        if not combined_text:
-            st.error("⚠️ Could not extract text from the files")
+        # Check if there are any files with content
+        has_content = False
+        for file_info in st.session_state.uploaded_files:
+            # Use the stored content instead of re-extracting
+            text = file_info.get('content', '')
+            if text and text.strip():
+                has_content = True
+                # Add better file context separation
+                combined_text += f"\n\n==== CONTENT FROM: {file_info['name']} ====\n\n{text}\n\n"
+        
+        if not has_content:
+            st.error("⚠️ Could not extract text from any of the files. Please check your files.")
             return None
             
         # Configure Gemini AI
@@ -414,7 +456,7 @@ def display_history_analytics():
         # Option to clear history
         if st.button("🗑️ Clear History"):
             st.session_state.generation_history = []
-            st.rerun()
+            st.experimental_rerun()
 
 def main():
     # Initialize session state
@@ -550,5 +592,7 @@ def main():
     }
     </style>
     """, unsafe_allow_html=True)
+
+# Execute the main function
 if __name__ == "__main__":
     main()
