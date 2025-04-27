@@ -502,16 +502,19 @@ def main():
                         if questions:
                             st.session_state.questions = questions
                             st.session_state.formatted_questions = format_questions(questions)
-                            file_names = ", ".join([f['name'] for f in st.session_state.uploaded_files])
-                            st.session_state.generation_history.append({
-                                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                'files': file_names,
-                                'type': question_type,
-                                'difficulty': difficulty,
-                                'count': num_questions,
-                                'raw_questions': questions
-                            })
-        
+                            history_entry = {
+                    'timestamp': datetime.now().isoformat(),  # ISO format for pandas parsing
+                    'file': ", ".join([f['name'] for f in st.session_state.uploaded_files]),
+                    'type': question_type,
+                    'difficulty': difficulty,
+                    'count': num_questions,
+                    'raw_content': questions  # Store original generated text
+                }
+                
+                # Update history (keep last 50 entries)
+                            st.session_state.generation_history = [history_entry] + st.session_state.generation_history[:49]
+
+
 
         with col2:
             if files_available and st.session_state.questions:
