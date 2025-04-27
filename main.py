@@ -388,7 +388,7 @@ def display_history_analytics():
         st.markdown(f"""
         <div class="stats-card">
         <h4>📑 Files Processed</h4>
-        <h2>{history_df['files'].nunique()}</h2>
+        <h2>{history_df['file'].nunique()}</h2>
         </div>
         """, unsafe_allow_html=True)
 
@@ -437,8 +437,8 @@ def display_history_analytics():
 
     # Display history table
     st.markdown("<h3 class='subheader'>📜 Recent Generation Activity</h3>", unsafe_allow_html=True)
-    display_df = history_df[['timestamp', 'files', 'type', 'difficulty', 'count']].copy()
-    display_df.columns = ['⏰ Timestamp', '📄 Files', '📋 Type', '🎯 Difficulty', '🔢 Count']
+    display_df = history_df[['timestamp', 'file', 'type', 'difficulty', 'count']].copy()
+    display_df.columns = ['⏰ Timestamp', '📄 File', '📋 Type', '🎯 Difficulty', '🔢 Count']
     st.dataframe(display_df.tail(10), use_container_width=True)
 
     if st.button("🗑️ Clear History", key="clear_history"):
