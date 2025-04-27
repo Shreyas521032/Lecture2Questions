@@ -178,49 +178,42 @@ def format_questions(raw_questions):
         return ""
     
     # Split by numbered questions
-    import re
     questions = re.split(r'\n\s*(\d+)\.\s+', raw_questions)
-    
-    if len(questions) <= 1:
-        return raw_questions
     
     formatted = ""
     
-    # Skip the first empty element if it exists
-    start_idx = 1 if questions[0].strip() == "" else 0
-    
-    for i in range(start_idx, len(questions), 2):
-        if i+1 < len(questions):
-            question_num = questions[i]
-            question_content = questions[i+1].strip()
-            
-            # Add extra spacing between parts and enhance formatting
-            question_content = question_content.replace("Question:", "<strong>Question:</strong>")
-            question_content = question_content.replace("Options:", "<strong>Options:</strong>")
-            question_content = question_content.replace("Correct Answer:", "<strong>Correct Answer:</strong>")
-            question_content = question_content.replace("Explanation:", "<strong>Explanation:</strong>")
-            
-            # Add line breaks for better readability
-            question_content = question_content.replace("<strong>Question:</strong>", "\n<strong>Question:</strong>")
-            question_content = question_content.replace("<strong>Options:</strong>", "\n<strong>Options:</strong>")
-            question_content = question_content.replace("<strong>Correct Answer:</strong>", "\n\n<strong>Correct Answer:</strong>")
-            question_content = question_content.replace("<strong>Explanation:</strong>", "\n\n<strong>Explanation:</strong>")
-            
-            # Apply different styling to options and answers
-            option_pattern = r'([A-D])\) (.*?)(?=\s*[A-D]\)|$|Correct Answer:)'
-            question_content = re.sub(option_pattern, r'<span style="margin-left:15px;display:block;"><span style="color:#3B82F6;font-weight:bold;">\1)</span> \2</span>', question_content)
-            
-            # Style the correct answer
-            question_content = re.sub(r'<strong>Correct Answer:</strong>\s*([A-D])', r'<strong>Correct Answer:</strong> <span style="color:#059669;font-weight:bold;">\1</span>', question_content)
-            
-            formatted += f'<div class="question-box">\n'
-            formatted += f'<span class="question-number">🔍 {question_num}.</span>\n'
-            formatted += f'{question_content}\n'
-            formatted += f'</div>\n\n'
+    # Iterate through split parts to find question numbers and content
+    for i in range(1, len(questions), 2):
+        if i + 1 >= len(questions):
+            break  # Skip incomplete pairs
+        
+        question_num = questions[i]
+        question_content = questions[i + 1].strip()
+        
+        # Formatting replacements
+        question_content = question_content.replace("Question:", "<strong>Question:</strong>")
+        question_content = question_content.replace("Options:", "<strong>Options:</strong>")
+        question_content = question_content.replace("Correct Answer:", "<strong>Correct Answer:</strong>")
+        question_content = question_content.replace("Explanation:", "<strong>Explanation:</strong>")
+        
+        # Add line breaks for better readability
+        question_content = question_content.replace("<strong>Question:</strong>", "\n<strong>Question:</strong>")
+        question_content = question_content.replace("<strong>Options:</strong>", "\n<strong>Options:</strong>")
+        question_content = question_content.replace("<strong>Correct Answer:</strong>", "\n\n<strong>Correct Answer:</strong>")
+        question_content = question_content.replace("<strong>Explanation:</strong>", "\n\n<strong>Explanation:</strong>")
+        
+        # Apply styling to options and answers
+        option_pattern = r'([A-D])\) (.*?)(?=\s*[A-D]\)|$|Correct Answer:)'
+        question_content = re.sub(option_pattern, r'<span style="margin-left:15px;display:block;"><span style="color:#3B82F6;font-weight:bold;">\1)</span> \2</span>', question_content)
+        question_content = re.sub(r'<strong>Correct Answer:</strong>\s*([A-D])', r'<strong>Correct Answer:</strong> <span style="color:#059669;font-weight:bold;">\1</span>', question_content)
+        
+        formatted += f'<div class="question-box">\n'
+        formatted += f'<span class="question-number">🔍 {question_num}.</span>\n'
+        formatted += f'{question_content}\n'
+        formatted += f'</div>\n\n'
     
     return formatted
 
-# Enhanced file management
 def handle_multiple_files():
     # File uploading interface
     st.markdown('<div class="file-uploader">', unsafe_allow_html=True)
@@ -230,80 +223,61 @@ def handle_multiple_files():
                                    type=["txt", "docx", "pptx", "pdf"],
                                    accept_multiple_files=True)
     
-    # Initialize session state for file storage if it doesn't exist
+    # Initialize session state for file storage
     if 'uploaded_files' not in st.session_state:
         st.session_state.uploaded_files = []
     
     # Process newly uploaded files
     if uploaded_files:
-        # Clear existing files list first to avoid duplicates
-        seen_files = {f['name']: f for f in st.session_state.uploaded_files}
+        seen_files = {f['hash']: f for f in st.session_state.uploaded_files}
         
         for file in uploaded_files:
-            # Reset file position to beginning to ensure proper reading
             file.seek(0)
-            
-            # Extract text and check if it's empty
             preview_text = extract_text(file)
-            if not preview_text or preview_text.strip() == "":
-                st.warning(f"No content could be extracted from {file.name}. Please check the file.")
+            if not preview_text.strip():
+                st.warning(f"No content extracted from {file.name}.")
                 continue
-                
-            # Generate preview for display
-            preview = preview_text[:100] + "..." if len(preview_text) > 100 else preview_text
             
-            # Store the file with its content
-            seen_files[file.name] = {
+            # Generate unique hash using name, size, and timestamp
+            unique_hash = hash(file.name + str(file.size) + str(datetime.now().timestamp()))
+            
+            seen_files[unique_hash] = {
                 'name': file.name,
                 'size': f"{len(file.getvalue()) / 1024:.1f} KB",
-                'hash': hash(file.name + str(file.size)),
+                'hash': unique_hash,
                 'file_obj': file,
-                'preview': preview,
-                'content': preview_text,  # Store the full content
+                'preview': preview_text[:100] + "..." if len(preview_text) > 100 else preview_text,
+                'content': preview_text,
                 'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
                 'type': file.type
             }
         
         st.session_state.uploaded_files = list(seen_files.values())
     
-    # Display uploaded files with interactive cards
+    # Display files and handle removal
     if st.session_state.uploaded_files:
         st.markdown("### 📂 Your Materials")
+        files_to_remove = []
         
-        files_to_remove = []  # Track files to remove
-        
-        for i, file in enumerate(st.session_state.uploaded_files):
+        for file in st.session_state.uploaded_files:
             col1, col2 = st.columns([4, 1])
-            
             with col1:
                 expander = st.expander(f"📄 {file['name']} ({file['size']})")
                 with expander:
                     st.write(f"**Type:** {file['type'].split('/')[-1].upper()}")
                     st.write(f"**Added:** {file['timestamp']}")
                     st.write("**Preview:**")
-                    st.markdown(f"<div style='background:#f5f5f5;padding:10px;border-radius:5px;font-family:monospace;white-space:pre-wrap;'>{file['preview']}</div>", unsafe_allow_html=True)
-                    
-                    # Show content length info
-                    content_len = len(file.get('content', ''))
-                    if content_len > 0:
-                        st.success(f"✅ Extracted {content_len} characters of text")
-                    else:
-                        st.error("❌ No content could be extracted")
-            
+                    st.markdown(f"<div style='background:#f5f5f5;padding:10px;border-radius:5px;'>{file['preview']}</div>", unsafe_allow_html=True)
             with col2:
-                # Fixed: Individual file removal
-                if st.button(f"🗑️ Remove", key=f"remove_{file['name']}_{i}"):
-                    files_to_remove.append(i)
+                if st.button("🗑️ Remove", key=f"remove_{file['hash']}"):
+                    files_to_remove.append(file['hash'])
         
-        # Remove files that were marked for deletion
+        # Remove files by hash
         if files_to_remove:
-            for index in sorted(files_to_remove, reverse=True):
-                st.session_state.uploaded_files.pop(index)
+            st.session_state.uploaded_files = [f for f in st.session_state.uploaded_files if f['hash'] not in files_to_remove]
             st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Return true if files are available
     return len(st.session_state.uploaded_files) > 0
 
 def generate_questions(api_key, question_type, difficulty, num_questions):
