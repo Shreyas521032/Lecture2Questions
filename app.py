@@ -15,17 +15,26 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    /* Main Header Styling */
     .main-header {
-        font-size: 2.8rem;
+        font-size: 3rem;
         color: #2563EB;
         text-align: center;
         margin-bottom: 2rem;
-        font-weight: bold;
-        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.15);
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         padding: 1rem;
         background: linear-gradient(90deg, #EFF6FF 0%, #DBEAFE 100%);
         border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
     }
+    .main-header:hover {
+        transform: translateY(-5px);
+    }
+
+    /* Question Box Styling */
     .question-box {
         background-color: #F0F9FF;
         border-left: 5px solid #0EA5E9;
@@ -33,12 +42,14 @@ st.markdown("""
         margin-bottom: 25px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s ease;
+        transition: transform 0.2s ease, box-shadow 0.3s ease;
     }
     .question-box:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     }
+
+    /* Button Styling */
     .stButton>button {
         background-color: #2563EB;
         color: white;
@@ -53,6 +64,8 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
+
+    /* Error Message Styling */
     .error-message {
         color: #DC2626;
         font-weight: bold;
@@ -62,24 +75,33 @@ st.markdown("""
         border-left: 5px solid #DC2626;
         margin: 10px 0;
     }
+
+    /* Subheader Styling */
     .subheader {
-        font-size: 1.7rem;
+        font-size: 1.8rem;
         color: #1E40AF;
         margin-top: 1.5rem;
         margin-bottom: 1rem;
         border-bottom: 3px solid #BFDBFE;
         padding-bottom: 0.6rem;
+        font-weight: 600;
     }
+
+    /* Question Number Styling */
     .question-number {
         font-weight: bold;
         color: #2563EB;
         font-size: 1.25rem;
     }
+
+    /* Question Text Styling */
     .question-text {
         font-size: 1.15rem;
         margin-bottom: 1rem;
         line-height: 1.5;
     }
+
+    /* Answer Styling */
     .answer {
         margin-top: 0.8rem;
         color: #047857;
@@ -88,7 +110,13 @@ st.markdown("""
         padding: 8px 12px;
         border-radius: 6px;
         display: inline-block;
+        transition: background-color 0.3s ease;
     }
+    .answer:hover {
+        background-color: #D1FAE5;
+    }
+
+    /* Explanation Styling */
     .explanation {
         background-color: #F8FAFC;
         padding: 15px;
@@ -97,19 +125,26 @@ st.markdown("""
         margin-bottom: 1.5rem;
         font-style: italic;
         border: 1px solid #E2E8F0;
+        transition: background-color 0.3s ease;
     }
+    .explanation:hover {
+        background-color: #E2E8F0;
+    }
+
+    /* Stats Card Styling */
     .stats-card {
         background: linear-gradient(145deg, #DBEAFE 0%, #E0F2FE 100%);
         padding: 20px;
         border-radius: 12px;
         margin-bottom: 20px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s;
+        transition: transform 0.2s, box-shadow 0.3s ease;
     }
     .stats-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     }
+
     .stats-card h4 {
         color: #1E40AF;
         font-size: 1.1rem;
@@ -120,22 +155,38 @@ st.markdown("""
         font-size: 2.5rem;
         margin: 0;
     }
+
+    /* File Uploader Styling */
     .file-uploader {
         background-color: #F1F5F9;
         padding: 20px;
         border-radius: 10px;
         border: 2px dashed #CBD5E1;
+        transition: background-color 0.3s ease;
     }
+    .file-uploader:hover {
+        background-color: #E5E7EB;
+    }
+
+    /* Config Section Styling */
     .config-section {
         background-color: #F8FAFC;
         padding: 20px;
         border-radius: 10px;
         margin-bottom: 20px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: background-color 0.3s ease;
     }
+    .config-section:hover {
+        background-color: #E2E8F0;
+    }
+
+    /* Action Button Styling */
     .action-button {
         margin-top: 8px;
     }
+
+    /* Footer Styling */
     .footer {
         text-align: center;
         color: #64748B;
@@ -144,7 +195,8 @@ st.markdown("""
         margin-top: 30px;
         border-top: 1px solid #E2E8F0;
     }
-    /* Custom tab styling */
+
+    /* Custom Tab Styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
     }
@@ -161,7 +213,8 @@ st.markdown("""
         background-color: #DBEAFE;
         border-bottom: 3px solid #3B82F6;
     }
-    /* File list styling */
+
+    /* File List Styling */
     .file-list {
         max-height: 200px;
         overflow-y: auto;
@@ -178,7 +231,13 @@ st.markdown("""
         background-color: white;
         border-radius: 6px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease, box-shadow 0.2s ease;
     }
+    .file-item:hover {
+        background-color: #F3F4F6;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
     .file-name {
         flex-grow: 1;
     }
@@ -193,7 +252,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
 
 # History tracking
 if 'generation_history' not in st.session_state:
