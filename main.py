@@ -130,6 +130,91 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+def extract_text(file):
+    """Extract text from various file formats"""
+    try:
+        if file.type == "text/plain":
+            return file.getvalue().decode("utf-8")
+        
+        elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            from docx import Document
+            doc = Document(BytesIO(file.read()))
+            return "\n".join([para.text for para in doc.paragraphs])
+        
+        elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+            from pptx import Presentation
+            prs = Presentation(BytesIO(file.read()))
+            text = []
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        text.append(shape.text)
+            return "\n".join(text)
+        
+        elif file.type == "application/pdf":
+            import PyPDF2
+            pdf_reader = PyPDF2.PdfReader(BytesIO(file.read()))
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text() + "\n"
+            return text
+        
+        else:
+            st.error(f"Unsupported file type: {file.type}")
+            return ""
+    
+    except Exception as e:
+        st.error(f"Error processing file: {str(e)}")
+        return ""
+
+def format_questions(raw_questions):
+    """Format the questions with better spacing and styling"""
+    if not raw_questions:
+        return ""
+    
+    # Split by numbered questions
+    import re
+    questions = re.split(r'\n\s*(\d+)\.\s+', raw_questions)
+    
+    if len(questions) <= 1:
+        return raw_questions
+    
+    formatted = ""
+    
+    # Skip the first empty element if it exists
+    start_idx = 1 if questions[0].strip() == "" else 0
+    
+    for i in range(start_idx, len(questions), 2):
+        if i+1 < len(questions):
+            question_num = questions[i]
+            question_content = questions[i+1].strip()
+            
+            # Add extra spacing between parts and enhance formatting
+            question_content = question_content.replace("Question:", "<strong>Question:</strong>")
+            question_content = question_content.replace("Options:", "<strong>Options:</strong>")
+            question_content = question_content.replace("Correct Answer:", "<strong>Correct Answer:</strong>")
+            question_content = question_content.replace("Explanation:", "<strong>Explanation:</strong>")
+            
+            # Add line breaks for better readability
+            question_content = question_content.replace("<strong>Question:</strong>", "\n<strong>Question:</strong>")
+            question_content = question_content.replace("<strong>Options:</strong>", "\n<strong>Options:</strong>")
+            question_content = question_content.replace("<strong>Correct Answer:</strong>", "\n\n<strong>Correct Answer:</strong>")
+            question_content = question_content.replace("<strong>Explanation:</strong>", "\n\n<strong>Explanation:</strong>")
+            
+            # Apply different styling to options and answers
+            option_pattern = r'([A-D])\) (.*?)(?=\s*[A-D]\)|$|Correct Answer:)'
+            question_content = re.sub(option_pattern, r'<span style="margin-left:15px;display:block;"><span style="color:#3B82F6;font-weight:bold;">\1)</span> \2</span>', question_content)
+            
+            # Style the correct answer
+            question_content = re.sub(r'<strong>Correct Answer:</strong>\s*([A-D])', r'<strong>Correct Answer:</strong> <span style="color:#059669;font-weight:bold;">\1</span>', question_content)
+            
+            formatted += f'<div class="question-box">\n'
+            formatted += f'<span class="question-number">🔍 {question_num}.</span>\n'
+            formatted += f'{question_content}\n'
+            formatted += f'</div>\n\n'
+    
+    return formatted
+
 # Enhanced file management
 def handle_multiple_files():
     # File uploading interface
@@ -238,6 +323,98 @@ def generate_questions(api_key, question_type, difficulty, num_questions):
         except Exception as e:
             st.markdown(f'<div class="error-message">⚠️ API error: {str(e)}</div>', unsafe_allow_html=True)
             return None
+
+def display_history_analytics():
+    """Display history and analytics in the history tab"""
+    st.markdown("<h2 class='subheader'>📊 Generation History & Analytics</h2>", unsafe_allow_html=True)
+    
+    if not st.session_state.generation_history:
+        st.info("📭 No question generation history yet. Generate some questions to see your history.")
+    else:
+        history_df = pd.DataFrame(st.session_state.generation_history)
+        
+        # Show stats
+        st.markdown("<h3 class='subheader'>📈 Usage Statistics</h3>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown(f"""
+            <div class="stats-card">
+            <h4>🔄 Total Generations</h4>
+            <h2>{len(history_df)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+            <div class="stats-card">
+            <h4>📋 Question Types</h4>
+            <h2>{len(history_df['type'].unique())}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"""
+            <div class="stats-card">
+            <h4>📑 Files Processed</h4>
+            <h2>{len(history_df['file'].unique())}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Additional stats row
+        if len(history_df) > 0:
+            col4 = st.columns(1)[0]
+            with col4:
+                total_questions = history_df['count'].sum()
+                st.markdown(f"""
+                <div class="stats-card">
+                <h4>🧩 Total Questions Created</h4>
+                <h2>{total_questions}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Analytics visualizations
+            st.markdown("<h3 class='subheader'>📊 Detailed Analytics</h3>", unsafe_allow_html=True)
+            
+            # Prepare data for visualizations
+            history_df['datetime'] = pd.to_datetime(history_df['timestamp'])
+            timeline_df = history_df.set_index('datetime').resample('D')['count'].sum().reset_index()
+            difficulty_df = history_df.groupby('difficulty')['count'].sum().reset_index()
+            
+            # Create two columns for charts
+            chart_col1, chart_col2 = st.columns(2)
+            
+            with chart_col1:
+                # Timeline chart
+                fig = px.line(timeline_df, 
+                            x='datetime', 
+                            y='count',
+                            title='Question Generation Timeline',
+                            labels={'count': 'Questions Generated', 'datetime': 'Date'},
+                            markers=True)
+                fig.update_layout(hovermode="x unified")
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with chart_col2:
+                # Difficulty distribution pie chart
+                fig = px.pie(difficulty_df,
+                            values='count',
+                            names='difficulty',
+                            title='Difficulty Distribution',
+                            color_discrete_sequence=px.colors.qualitative.Pastel,
+                            hole=0.3)
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig, use_container_width=True)
+        
+        # Display history table
+        st.markdown("<h3 class='subheader'>📜 Recent Generation Activity</h3>", unsafe_allow_html=True)
+        
+        # Create a more readable history table
+        display_df = history_df[['timestamp', 'file', 'type', 'difficulty', 'count']].copy()
+        display_df.columns = ['⏰ Timestamp', '📄 File', '📋 Type', '🎯 Difficulty', '🔢 Count']
+        st.dataframe(display_df.tail(10), use_container_width=True)
+        
+        # Option to clear history
+        if st.button("🗑️ Clear History"):
+            st.session_state.generation_history = []
+            st.experimental_rerun()
 
 def main():
     # Initialize session state
@@ -354,7 +531,7 @@ def main():
                 </style>
                 """, unsafe_allow_html=True)
     
-    # History tab implementation remains similar but more compact
+    # History tab
     with tab2:
         display_history_analytics()
         
@@ -373,6 +550,3 @@ def main():
     }
     </style>
     """, unsafe_allow_html=True)
-
-if __name__ == "__main__":
-  main()
