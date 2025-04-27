@@ -358,97 +358,92 @@ def generate_questions(api_key, question_type, difficulty, num_questions):
             return None
 
 def display_history_analytics():
-    """Display history and analytics in the history tab"""
+    """Display history and analytics with proper data handling"""
     st.markdown("<h2 class='subheader'>📊 Generation History & Analytics</h2>", unsafe_allow_html=True)
 
-    if not st.session_state.generation_history:
+    if 'generation_history' not in st.session_state or not st.session_state.generation_history:
         st.info("📭 No question generation history yet. Generate some questions to see your history.")
-    else:
-        history_df = pd.DataFrame(st.session_state.generation_history)
+        return
 
-        # Show stats
-        st.markdown("<h3 class='subheader'>📈 Usage Statistics</h3>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown(f"""
-            <div class="stats-card">
-            <h4>🔄 Total Generations</h4>
-            <h2>{len(history_df)}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        with col2:
-            st.markdown(f"""
-            <div class="stats-card">
-            <h4>📋 Question Types</h4>
-            <h2>{len(history_df['type'].unique())}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        with col3:
-            st.markdown(f"""
-            <div class="stats-card">
-            <h4>📑 Files Processed</h4>
-            <h2>{len(history_df['file'].unique())}</h2>
-            </div>
-            """, unsafe_allow_html=True)
+    history_df = pd.DataFrame(st.session_state.generation_history)
 
-        # Additional stats row
-        if len(history_df) > 0:
-            col4 = st.columns(1)[0]
-            with col4:
-                total_questions = history_df['count'].sum()
-                st.markdown(f"""
-                <div class="stats-card">
-                <h4>🧩 Total Questions Created</h4>
-                <h2>{total_questions}</h2>
-                </div>
-                """, unsafe_allow_html=True)
+    # Show stats
+    st.markdown("<h3 class='subheader'>📈 Usage Statistics</h3>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"""
+        <div class="stats-card">
+        <h4>🔄 Total Generations</h4>
+        <h2>{len(history_df)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class="stats-card">
+        <h4>📋 Question Types</h4>
+        <h2>{history_df['type'].nunique()}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class="stats-card">
+        <h4>📑 Files Processed</h4>
+        <h2>{history_df['files'].nunique()}</h2>
+        </div>
+        """, unsafe_allow_html=True)
 
-            # Analytics visualizations
-            st.markdown("<h3 class='subheader'>📊 Detailed Analytics</h3>", unsafe_allow_html=True)
+    # Additional stats
+    total_questions = history_df['count'].sum()
+    st.markdown(f"""
+    <div class="stats-card" style="margin-top:15px;">
+    <h4>🧩 Total Questions Created</h4>
+    <h2>{total_questions}</h2>
+    </div>
+    """, unsafe_allow_html=True)
 
-            # Prepare data for visualizations
-            history_df['datetime'] = pd.to_datetime(history_df['timestamp'])
-            timeline_df = history_df.set_index('datetime').resample('D')['count'].sum().reset_index()
-            difficulty_df = history_df.groupby('difficulty')['count'].sum().reset_index()
+    # Analytics visualizations
+    st.markdown("<h3 class='subheader'>📊 Detailed Analytics</h3>", unsafe_allow_html=True)
+    
+    try:
+        # Prepare data for visualizations
+        history_df['datetime'] = pd.to_datetime(history_df['timestamp'])
+        timeline_df = history_df.set_index('datetime').resample('D')['count'].sum().reset_index()
+        difficulty_df = history_df.groupby('difficulty')['count'].sum().reset_index()
 
-            # Create two columns for charts
-            chart_col1, chart_col2 = st.columns(2)
+        # Create charts
+        chart_col1, chart_col2 = st.columns(2)
+        with chart_col1:
+            fig = px.line(timeline_df, 
+                        x='datetime', 
+                        y='count',
+                        title='Question Generation Timeline',
+                        labels={'count': 'Questions Generated', 'datetime': 'Date'},
+                        markers=True)
+            fig.update_layout(hovermode="x unified")
+            st.plotly_chart(fig, use_container_width=True)
 
-            with chart_col1:
-                # Timeline chart
-                fig = px.line(timeline_df, 
-                            x='datetime', 
-                            y='count',
-                            title='Question Generation Timeline',
-                            labels={'count': 'Questions Generated', 'datetime': 'Date'},
-                            markers=True)
-                fig.update_layout(hovermode="x unified")
-                st.plotly_chart(fig, use_container_width=True)
+        with chart_col2:
+            fig = px.pie(difficulty_df,
+                        values='count',
+                        names='difficulty',
+                        title='Difficulty Distribution',
+                        color_discrete_sequence=px.colors.qualitative.Pastel,
+                        hole=0.3)
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig, use_container_width=True)
 
-            with chart_col2:
-                # Difficulty distribution pie chart
-                fig = px.pie(difficulty_df,
-                            values='count',
-                            names='difficulty',
-                            title='Difficulty Distribution',
-                            color_discrete_sequence=px.colors.qualitative.Pastel,
-                            hole=0.3)
-                fig.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig, use_container_width=True)
+    except Exception as e:
+        st.error(f"Error generating charts: {str(e)}")
 
-        # Display history table
-        st.markdown("<h3 class='subheader'>📜 Recent Generation Activity</h3>", unsafe_allow_html=True)
+    # Display history table
+    st.markdown("<h3 class='subheader'>📜 Recent Generation Activity</h3>", unsafe_allow_html=True)
+    display_df = history_df[['timestamp', 'files', 'type', 'difficulty', 'count']].copy()
+    display_df.columns = ['⏰ Timestamp', '📄 Files', '📋 Type', '🎯 Difficulty', '🔢 Count']
+    st.dataframe(display_df.tail(10), use_container_width=True)
 
-        # Create a more readable history table
-        display_df = history_df[['timestamp', 'file', 'type', 'difficulty', 'count']].copy()
-        display_df.columns = ['⏰ Timestamp', '📄 File', '📋 Type', '🎯 Difficulty', '🔢 Count']
-        st.dataframe(display_df.tail(10), use_container_width=True)
-
-        # Option to clear history
-        if st.button("🗑️ Clear History"):
-            st.session_state.generation_history = []
-            st.rerun()
-            st.rerun()
+    if st.button("🗑️ Clear History", key="clear_history"):
+        st.session_state.generation_history = []
+        st.rerun()
 
 def main():
     # Initialize session state
@@ -458,6 +453,8 @@ def main():
         st.session_state.uploaded_files = []
     if 'questions' not in st.session_state:
         st.session_state.questions = None
+    if 'formatted_questions' not in st.session_state:
+        st.session_state.formatted_questions = ""
 
     # App header
     st.markdown('<h1 class="main-header">🧠 Lecture2Exam ✨</h1>', unsafe_allow_html=True)
@@ -505,13 +502,57 @@ def main():
                         if questions:
                             st.session_state.questions = questions
                             st.session_state.formatted_questions = format_questions(questions)
-                            # Update history (unchanged)
+                            file_names = ", ".join([f['name'] for f in st.session_state.uploaded_files])
+                            st.session_state.generation_history.append({
+                                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                'files': file_names,
+                                'type': question_type,
+                                'difficulty': difficulty,
+                                'count': num_questions,
+                                'raw_questions': questions
+                            })
+        
 
         with col2:
             if files_available and st.session_state.questions:
                 st.markdown(f"<h2 class='subheader'>✅ Generated {question_type} Questions</h2>", unsafe_allow_html=True)
                 st.markdown(st.session_state.formatted_questions, unsafe_allow_html=True)
-                # Download and regenerate buttons (unchanged)
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.download_button(
+                        label="📥 Download Questions",
+                        data=BytesIO(st.session_state.questions.encode('utf-8')),
+                        file_name=f"{question_type.lower().replace(' ', '_')}_questions.txt",
+                        mime="text/plain",
+                        use_container_width=True
+                    )
+                with col_b:
+                    if st.button("🔄 Regenerate Questions", use_container_width=True):
+                        with st.spinner("🔄 Regenerating questions..."):
+                            # Combine all files' content again
+                            combined_text = ""
+                            for file_info in st.session_state.uploaded_files:
+                                file = file_info['file_obj']
+                                text = extract_text(file)
+                                if text:
+                                    combined_text += f"\n\n--- {file.name} ---\n\n{text}"
+                            
+                            if combined_text:
+                                questions = generate_with_gemini(combined_text, question_type, difficulty, api_key, num_questions)
+                                if questions:
+                                    st.session_state.questions = questions
+                                    st.session_state.formatted_questions = format_questions(questions)
+            else:
+                st.markdown("""
+                <div style="background-color: #F0F9FF; padding: 30px; border-radius: 10px; text-align: center; margin-top: 50px;">
+                    <h3>🚀 Ready to Create Questions?</h3>
+                    <p>Upload your learning material and configure settings to generate AI-powered questions.</p>
+                    <p style="font-size: 3rem; margin: 20px 0;">📚 ➡️ 🧠 ➡️ 📝</p>
+                    <p>Perfect for teachers, students, and learning professionals.</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+    
 
     with tab2:
         display_history_analytics()
