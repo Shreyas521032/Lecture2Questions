@@ -1,9 +1,9 @@
-import streamlit as st
-from io import BytesIO
-import google.generativeai as genai
-import pandas as pd
-from datetime import datetime
-import plotly.express as px
+ import streamlit as st
+ from io import BytesIO
+ import google.generativeai as genai
+ import pandas as pd
+ from datetime import datetime
+ import plotly.express as px
  
  # Set page configuration
  st.set_page_config(
