@@ -471,7 +471,7 @@ def main():
                 st.subheader("🔑 API Configuration")
                 st.markdown("Enter your API key below. You may obtain from [Google AI Studio](https://aistudio.google.com/apikey).")
     
-                 api_key = st.text_input(
+                api_key = st.text_input(
                     label="API Key",
                     type="password",
                     placeholder="Enter your API key here...",
