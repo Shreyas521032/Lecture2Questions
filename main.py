@@ -476,7 +476,7 @@ def main():
                     placeholder="Enter your API key here...",
                     help="This key is required to access the AI services. Keep it confidential."
                   )                    
-                st.markdown("You may obtain from [Google AI Studio](https://aistudio.google.com/apikey).")
+                st.markdown("You may obtain API Key from [Google AI Studio](https://aistudio.google.com/apikey).")
             # File handling
             files_available = handle_multiple_files()
 
