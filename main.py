@@ -468,10 +468,15 @@ def main():
         with col1:
             # API Configuration
             with st.container():
-                st.markdown("### 🔑 API Configuration")
-                api_key = st.text_input("API Key", type="password", 
-                                      help="Get your key from Google AI Studio")
-
+                st.subheader("🔑 API Configuration")
+                st.markdown("Enter your API key below. You may obtain from [Google AI Studio](https://aistudio.google.com/apikey).")
+    
+                 api_key = st.text_input(
+                    label="API Key",
+                    type="password",
+                    placeholder="Enter your API key here...",
+                    help="This key is required to access the AI services. Keep it confidential."
+                  )                    
             # File handling
             files_available = handle_multiple_files()
 
