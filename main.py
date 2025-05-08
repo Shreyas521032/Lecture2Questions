@@ -321,7 +321,7 @@ def generate_questions(api_key, question_type, difficulty, num_questions):
 
         try:
             # Try with latest model first
-            model = genai.GenerativeModel('gemini-1.5-pro-latest')
+            model = genai.GenerativeModel('gemini-1.5-flash')
 
             # Enhanced prompt for better question quality
             prompt = f"""
